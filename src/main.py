@@ -1,21 +1,23 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, APIRouter
 
 from sql_app import engine
 from sql_app.utils import create_tables, db_logger
+import test
 
 logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
+router = APIRouter()
 
 
-@app.get("/")
+@router.get("/")
 async def root():
     return {"message": "Hello World"}
 
 
-@app.get("/hello/{name}")
+@router.get("/hello/{name}")
 async def say_hello(name: str):
     return {"message": f"Hello {name}"}
 
@@ -26,3 +28,5 @@ async def startup():
     db_logger.info("Creating tables")
     create_tables(engine)
 
+
+app.include_router(router)
