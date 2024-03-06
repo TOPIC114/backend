@@ -4,8 +4,7 @@ from fastapi import FastAPI, APIRouter
 
 from sql_app import engine
 from sql_app.utils import create_tables, db_logger
-import test
-
+from test import test_router
 logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
@@ -30,3 +29,4 @@ async def startup():
 
 
 app.include_router(router)
+app.include_router(test_router)

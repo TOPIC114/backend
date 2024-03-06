@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-router = APIRouter()
+test_router = APIRouter()
 
-@router.get('/test/')
+
+@test_router.get('/test/')
 async def hello_world():
     return {'hello': 'world'}
