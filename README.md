@@ -1,10 +1,10 @@
 # backend
 the backend of services
 
-Using conda to manage virtual environment,try 
+Require fastapi, sqlalchemy and uvicorn to run this program,use:
 ```bash
-conda env create -f environment.yaml
+pip install fastapi sqlalchemy uvicorn
 ```
-to rebuild the environment after clone this repo,then switch to this environment!
+to rebuild the environment after clone this repo,then switch to the virtural environment!
 
 you can use miniconda3 or anaconda,btw!
