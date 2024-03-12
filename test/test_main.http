@@ -10,10 +10,11 @@ Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8000/test/user/write/test_name
+GET  http://127.0.0.1:8000/test/async/read
 Accept: application/json
 
 ###
 
-GET http://127.0.0.1:8000/test/user/read
+GET  http://127.0.0.1:8000/test/async/write
 Accept: application/json
+

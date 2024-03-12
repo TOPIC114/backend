@@ -1,10 +1,10 @@
 import logging
 
+import uvicorn
 from fastapi import FastAPI, APIRouter
 
-from sql_app import engine
-from sql_app.utils import create_tables, db_logger
 from test import test_router
+
 logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
@@ -19,13 +19,6 @@ async def root():
 @router.get("/hello/{name}")
 async def say_hello(name: str):
     return {"message": f"Hello {name}"}
-
-
-# Create database column after startup (all module are loaded)
-@app.on_event("startup")
-async def startup():
-    db_logger.info("Creating tables")
-    create_tables(engine)
 
 
 app.include_router(router)
