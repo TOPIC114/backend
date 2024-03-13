@@ -6,7 +6,7 @@ from fastapi import FastAPI, APIRouter
 from test import test_router
 
 logging.basicConfig(level=logging.DEBUG)
-
+from pydantic import BaseModel
 app = FastAPI()
 router = APIRouter()
 
