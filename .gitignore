@@ -1,5 +1,6 @@
-.idea/
+.idea/*
 !.idea/.gitignore
 sql_app.db
 sql_app.sqlite
 migration/versions/*
+api_test/*
