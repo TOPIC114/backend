@@ -8,7 +8,7 @@ from sql_app.model.Recipe import Recipe
 test_router = APIRouter()
 
 
-@test_router.get('/test/async/User_read')
+@test_router.get('/test/async/user/read')
 async def read_test_user_100_async(db: AsyncDBSession):
     stmt = select(User).where(User.name == "test1").limit(1)
     result = await db.execute(stmt)
@@ -20,7 +20,7 @@ async def read_test_user_100_async(db: AsyncDBSession):
     return items
 
 
-@test_router.get('/test/async/User_write', status_code=201)  # no message return
+@test_router.get('/test/async/user/write', status_code=201)  # no message return
 async def write_test_user_100_async(db: AsyncDBSession):
     user = User(name="test1", level=5)
     try:
@@ -32,18 +32,18 @@ async def write_test_user_100_async(db: AsyncDBSession):
         raise e
     return user
 
-@test_router.get('/test/async/Recipe_read')
+@test_router.get('/test/async/recipe/read')
 async def read_recipe_async(db: AsyncDBSession):
     stmt = select(Recipe).where(Recipe.name == "Recipe_1")
     result = await db.execute(stmt)
-    items = result.scalars().first()
+    items = result.scalars().all()
 
     if not items:
         raise HTTPException(status_code=404)
 
     return items
 
-@test_router.get('/test/async/Recipe_write', status_code=201)
+@test_router.get('/test/async/recipe/write', status_code=201)
 async def write_recipe_async(db:AsyncDBSession):
     new_recipe = Recipe(name="Recipe_1",type="type_1",intro="test_intro",video_link="test_link")
     try:
