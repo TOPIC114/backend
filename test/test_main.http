@@ -10,11 +10,23 @@ Accept: application/json
 
 ###
 
-GET  http://127.0.0.1:8000/test/async/read
+GET  http://127.0.0.1:8000/test/async/User_read
 Accept: application/json
 
 ###
 
-GET  http://127.0.0.1:8000/test/async/write
+GET  http://127.0.0.1:8000/test/async/User_write
 Accept: application/json
+
+###
+
+GET  http://127.0.0.1:8000/test/async/Recipe_write
+Accept: application/json
+
+###
+
+GET  http://127.0.0.1:8000/test/async/Recipe_read
+Accept: application/json
+
+###
 

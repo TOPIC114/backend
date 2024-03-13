@@ -28,6 +28,8 @@ config.set_main_option('sqlalchemy.url', os.environ.get(
 # target_metadata = mymodel.Base.metadata
 
 from src.sql_app.db import Base
+from src.sql_app.model.User import *
+from src.sql_app.model.Recipe import *
 
 
 target_metadata = Base.metadata

@@ -8,3 +8,10 @@ pip install fastapi sqlalchemy uvicorn alembic
 to rebuild the environment after clone this repo,then switch to the virtural environment!
 
 you can use miniconda3 or anaconda,btw!
+
+```bash
+alembic revision --autogenerate -m "Initial tables"
+```
+```bash
+alembic upgrade head
+```
