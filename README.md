@@ -9,9 +9,19 @@ to rebuild the environment after clone this repo,then switch to the virtural env
 
 you can use miniconda3 or anaconda,btw!
 
+# Database migration (or init)
+
+### *Windows*
+run
 ```bash
-alembic revision --autogenerate -m "Initial tables"
+migration.bat
 ```
+to migrate database.
+
+### *\*NIX* 
+
+run
 ```bash
-alembic upgrade head
+./migration.sh
 ```
+to migrate database.
