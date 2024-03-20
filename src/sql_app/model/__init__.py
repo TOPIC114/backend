@@ -1,1 +1,1 @@
-__all__ = ['User','Recipe']
+__all__ = ['User','Recipe','Model']

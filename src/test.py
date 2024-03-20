@@ -1,9 +1,13 @@
+import datetime
+
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
+from datetime import date
 
 from sql_app.db import AsyncDBSession
 from sql_app.model.User import User
 from sql_app.model.Recipe import Recipe
+from sql_app.model.Model import Model
 
 test_router = APIRouter()
 
@@ -55,6 +59,28 @@ async def write_recipe_async(db:AsyncDBSession):
         raise e
     return new_recipe
 
+@test_router.get('/test/async/model/read')
+async def read_model_async(db: AsyncDBSession):
+    stmt = select(Model).where(Model.version == "version1")
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+
+    if not items:
+        raise HTTPException(status_code=404)
+
+    return items
+
+@test_router.get('/test/async/model/write', status_code=201)
+async def write_model_async(db:AsyncDBSession):
+    new_model = Model(file_path="test_file_path",description="test_description",size="test_size",version="version1",update_date=date.today())
+    try:
+        db.add(new_model)
+        await db.commit()
+        await db.refresh(new_model)
+    except Exception as e:
+        await db.rollback()
+        raise e
+    return new_model
 
 
 
