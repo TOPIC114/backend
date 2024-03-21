@@ -14,7 +14,7 @@ test_router = APIRouter()
 
 @test_router.get('/test/async/user/read')
 async def read_test_user_100_async(db: AsyncDBSession):
-    stmt = select(User).where(User.name == "test1").limit(1)
+    stmt = select(User).where(User.username == "test1").limit(1)
     result = await db.execute(stmt)
     items = result.scalars().first()  # list
 
