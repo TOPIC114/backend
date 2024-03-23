@@ -25,8 +25,6 @@ class Session(Base):
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     session = Column(String(24), nullable=False, primary_key=True)
     expire = Column(DateTime, nullable=True, default=get_expire_date)
-
-
 class History(Base):
     __tablename__ = 'user_history'
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
