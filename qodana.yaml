@@ -25,11 +25,7 @@ exclude:
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh
 bootstrap: |
-    echo "create virtual environment"
-    conda create --name tests python=3.11
-    conda init bash
-    conda activate tests
-    echo "Installing dependencies"
+    rm -rf .idea
     pip3 install -r requirements.txt
     
 
@@ -39,4 +35,4 @@ bootstrap: |
 
 #Specify Qodana linter for analysis (Applied in CI/CD pipeline)
 
-linter: jetbrains/qodana-python-community:latest
+linter: jetbrains/qodana-python-community:2023.3
