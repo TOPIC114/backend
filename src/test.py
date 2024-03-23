@@ -1,5 +1,3 @@
-import datetime
-
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 from datetime import date
@@ -36,6 +34,7 @@ async def write_test_user_100_async(db: AsyncDBSession):
         raise e
     return user
 
+
 @test_router.get('/test/async/recipe/read')
 async def read_recipe_async(db: AsyncDBSession):
     stmt = select(Recipe).where(Recipe.name == "Recipe_1")
@@ -47,9 +46,10 @@ async def read_recipe_async(db: AsyncDBSession):
 
     return items
 
+
 @test_router.get('/test/async/recipe/write', status_code=201)
-async def write_recipe_async(db:AsyncDBSession):
-    new_recipe = Recipe(name="Recipe_1",type="type_1",intro="test_intro",video_link="test_link")
+async def write_recipe_async(db: AsyncDBSession):
+    new_recipe = Recipe(name="Recipe_1", type="type_1", intro="test_intro", video_link="test_link")
     try:
         db.add(new_recipe)
         await db.commit()
@@ -58,6 +58,7 @@ async def write_recipe_async(db:AsyncDBSession):
         await db.rollback()
         raise e
     return new_recipe
+
 
 @test_router.get('/test/async/model/read')
 async def read_model_async(db: AsyncDBSession):
@@ -70,9 +71,11 @@ async def read_model_async(db: AsyncDBSession):
 
     return items
 
+
 @test_router.get('/test/async/model/write', status_code=201)
-async def write_model_async(db:AsyncDBSession):
-    new_model = Model(file_path="test_file_path",description="test_description",size="test_size",version="version1",update_date=date.today())
+async def write_model_async(db: AsyncDBSession):
+    new_model = Model(file_path="test_file_path", description="test_description", size="test_size", version="version1",
+                      update_date=date.today())
     try:
         db.add(new_model)
         await db.commit()
@@ -81,6 +84,3 @@ async def write_model_async(db:AsyncDBSession):
         await db.rollback()
         raise e
     return new_model
-
-
-
