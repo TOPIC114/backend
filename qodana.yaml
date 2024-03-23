@@ -16,16 +16,17 @@ profile:
 #  - name: <SomeEnabledInspectionId>
 
 #Disable inspections
-#exclude:
-#  - name: migration
-#    paths:
-#      - migration/*
+exclude:
+  - name: unused
+    paths:
+      - migration
+      - tests
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh
 bootstrap: |
     echo "create virtual environment"
-    python3 -m venv test
+    python3 -m venv tests
     source test/bin/activate
     echo "Installing dependencies"
     pip install -r requirements.txt
