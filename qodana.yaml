@@ -25,6 +25,7 @@ profile:
 #plugins:
 #  - id: <plugin.id> #(plugin id can be found at https://plugins.jetbrains.com)
 
+#Specify Qodana linter for analysis (Applied in CI/CD pipeline)
 
 bootstrap: pip install -r requirements.txt
 
@@ -33,5 +34,4 @@ exclude:
     paths:
       - migration
 
-#Specify Qodana linter for analysis (Applied in CI/CD pipeline)
-linter: jetbrains/qodana-python-community:latest
+linter: jetbrains/qodana-python:latest
