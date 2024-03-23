@@ -17,10 +17,10 @@ profile:
 
 #Disable inspections
 exclude:
-  - name: unused
+  - name: All
     paths:
       - migration
-      - tests
+
 
 #Execute shell command before Qodana execution (Applied in CI/CD pipeline)
 #bootstrap: sh ./prepare-qodana.sh
