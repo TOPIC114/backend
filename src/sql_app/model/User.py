@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import relationship
 
-from .Recipe import Recipe
 from ..db import Base
 
 
@@ -14,6 +13,7 @@ class User(Base):
     email = Column(String(255), nullable=False, unique=True)
     password = Column(String(24), nullable=False)
     level = Column(Integer, nullable=False)  # permission level
+    sessions = relationship('Session', backref='user', passive_deletes=True)
 
 
 def get_expire_date():
@@ -22,16 +22,10 @@ def get_expire_date():
 
 class Session(Base):
     __tablename__ = 'session'
-    id = Column(Integer, ForeignKey('user.id'), primary_key=True)
-    session = Column(String(24), nullable=False, primary_key=True)
+    uid = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    session = Column(String(24), nullable=False, primary_key=True, unique=True)
     expire = Column(DateTime, nullable=True, default=get_expire_date)
 
-
-class History(Base):
-    __tablename__ = 'user_history'
-    id = Column(Integer, ForeignKey('user.id'), primary_key=True)
-    history = relationship(Recipe)
-    time = Column(DateTime, nullable=False, default=datetime.now)
 
 
 class Comment(Base):
