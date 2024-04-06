@@ -24,7 +24,7 @@ async def read_test_user_100_async(db: AsyncDBSession):
 
 @test_router.get('/test/async/user/write', status_code=201)  # no message return
 async def write_test_user_100_async(db: AsyncDBSession):
-    user = User(name="test1", level=5)
+    user = User(username="test1", password="hi", email="123", level=5)
     try:
         db.add(user)
         await db.commit()
