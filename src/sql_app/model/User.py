@@ -32,3 +32,11 @@ class History(Base):
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     history = relationship(Recipe)
     time = Column(DateTime, nullable=False, default=datetime.now)
+
+
+class Comment(Base):
+    __tablename__ = 'comment'
+    id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    recipe_id = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
+    comment = Column(String, nullable=False)
+    rate = Column(Integer, nullable=False)
