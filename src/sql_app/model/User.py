@@ -14,6 +14,7 @@ class User(Base):
     password = Column(String(24), nullable=False)
     level = Column(Integer, nullable=False)  # permission level
     sessions = relationship('Session', backref='user', passive_deletes=True)
+    comments = relationship('Comment', backref='user', passive_deletes=True)
 
 
 def get_expire_date():
@@ -27,10 +28,9 @@ class Session(Base):
     expire = Column(DateTime, nullable=True, default=get_expire_date)
 
 
-
 class Comment(Base):
     __tablename__ = 'comment'
-    id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    uid = Column(Integer, ForeignKey('user.id'), primary_key=True)
     recipe_id = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
     comment = Column(String, nullable=False)
     rate = Column(Integer, nullable=False)
