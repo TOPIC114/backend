@@ -12,3 +12,4 @@ class Recipe(Base):
     intro = Column(String(60), nullable=False)
     video_link = Column(String(60), nullable=True)
     comments = relationship('Comment', backref='Recipe', passive_deletes=True)
+    searches = relationship('User', secondary='search', backref='Recipe', passive_deletes=True, lazy='dynamic')

@@ -1,9 +1,15 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import relationship
 
 from ..db import Base
+
+search = Table('search', Base.metadata,
+               Column('uid', Integer, ForeignKey('user.id'), primary_key=True),
+               Column('rid', Integer, ForeignKey('Recipe.id'), primary_key=True),
+               Column('search_date', DateTime, nullable=False)
+               )
 
 
 class User(Base):
@@ -15,6 +21,7 @@ class User(Base):
     level = Column(Integer, nullable=False)  # permission level
     sessions = relationship('Session', backref='user', passive_deletes=True)
     comments = relationship('Comment', backref='user', passive_deletes=True)
+    searches = relationship('Recipe', secondary=search, backref='user', passive_deletes=True, lazy='dynamic')
 
 
 def get_expire_date():
@@ -31,6 +38,6 @@ class Session(Base):
 class Comment(Base):
     __tablename__ = 'comment'
     uid = Column(Integer, ForeignKey('user.id'), primary_key=True)
-    recipe_id = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
+    rid = Column(Integer, ForeignKey('Recipe.id'), primary_key=True)
     comment = Column(String, nullable=False)
     rate = Column(Integer, nullable=False)
