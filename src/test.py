@@ -88,8 +88,8 @@ async def write_model_async(db: AsyncDBSession):
 
 @test_router.get('/test/async/search', status_code=201)
 async def search_history(db: AsyncDBSession):
-    stmt = (select(Recipe, column("search_date")).join_from(User, search).join_from(search, Recipe)
-            .where(User.id == 1).order_by(search.c.search_date.desc()))
+    stmt = select(Recipe, column("search_date").join_from(User, search).join_from(search, Recipe)
+                  .where(User.id == 1).order_by(search.c.search_date.desc()))
     result = await db.execute(stmt)
     items = result.fetchall()
     return_list = []
