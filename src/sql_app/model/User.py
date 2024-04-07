@@ -11,6 +11,11 @@ search = Table('search', Base.metadata,
                Column('search_date', DateTime, nullable=False)
                )
 
+author = Table('author', Base.metadata,
+               Column('uid', Integer, ForeignKey('user.id'), primary_key=True),
+               Column('rid', Integer, ForeignKey('Recipe.id'), primary_key=True)
+               )
+
 
 class User(Base):
     __tablename__ = 'user'
@@ -22,6 +27,7 @@ class User(Base):
     sessions = relationship('Session', backref='user', passive_deletes=True)
     comments = relationship('Comment', backref='user', passive_deletes=True)
     searches = relationship('Recipe', secondary=search, backref='user', passive_deletes=True, lazy='dynamic')
+    authors = relationship('Recipe', secondary=author, backref='user', passive_deletes=True, lazy='dynamic')
 
 
 def get_expire_date():
