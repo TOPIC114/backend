@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, column
 from datetime import date
 
 from sql_app.db import AsyncDBSession
-from sql_app.model.User import User
+from sql_app.model.User import User, search
 from sql_app.model.Recipe import Recipe
 from sql_app.model.Model import Model
 
@@ -84,3 +84,19 @@ async def write_model_async(db: AsyncDBSession):
         await db.rollback()
         raise e
     return new_model
+
+
+@test_router.get('/test/async/search', status_code=201)
+async def search_history(db: AsyncDBSession):
+    stmt = select(Recipe, column("search_date").join_from(User, search).join_from(search, Recipe)
+                  .where(User.id == 1).order_by(search.c.search_date.desc()))
+    result = await db.execute(stmt)
+    items = result.fetchall()
+    return_list = []
+    for item in items:
+        return_list.append({
+            "recipe": item[0],
+            "search_date": item[1]
+        })
+
+    return return_list

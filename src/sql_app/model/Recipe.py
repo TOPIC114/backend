@@ -1,3 +1,5 @@
+from sqlalchemy.orm import relationship
+
 from ..db import Base
 from sqlalchemy import Column, Integer, String
 
@@ -9,3 +11,6 @@ class Recipe(Base):
     type = Column(String(16), index=True, nullable=False)
     intro = Column(String(60), nullable=False)
     video_link = Column(String(60), nullable=True)
+    comments = relationship('Comment', backref='Recipe', passive_deletes=True)
+    searches = relationship('User', secondary='search', backref='Recipe', passive_deletes=True, lazy='dynamic')
+    authors = relationship('User', secondary='author', backref='Recipe', passive_deletes=True, lazy='dynamic')
