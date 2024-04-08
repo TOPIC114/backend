@@ -2,8 +2,8 @@ POST http://localhost:8000/user/register
 Content-Type: application/json
 
 {
-  "username": "test1234",
+  "username": "{{$random.alphabetic(12)}}",
   "password": "test2234",
-  "email": "test@gmail.com"
+  "email": "{{$random.alphabetic(8)}}@gmail.com"
 }
 ###
