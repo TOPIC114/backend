@@ -5,13 +5,13 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey
 
 made = Table(
     'made', Base.metadata,
-    Column('rid', Integer, ForeignKey('Recipe.id', ondelete='CASCADE')),
+    Column('rid', Integer, ForeignKey('recipe.id', ondelete='CASCADE')),
     Column('iid', Integer, ForeignKey('ingredient.id', ondelete='CASCADE'))
 )
 
 
 class Recipe(Base):
-    __tablename__ = 'Recipe'
+    __tablename__ = 'recipe'
     id = Column(Integer, primary_key=True)
     name = Column(String(32), nullable=False)
     description = Column(String(60), nullable=False)
