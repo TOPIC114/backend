@@ -1,4 +1,5 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from sqlalchemy.exc import IntegrityError
 
 from request.user import RegisterRequest
 from sql_app.db import AsyncDBSession
@@ -17,8 +18,9 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession):
         db.add(user)
         await db.commit()
         await db.refresh(user)
+    except IntegrityError as e:
+        raise HTTPException(status_code=409, detail='Username or email already exists')
     except Exception as e:
         await db.rollback()
         raise e
     return user
-    pass
