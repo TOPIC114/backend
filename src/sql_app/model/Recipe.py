@@ -19,7 +19,7 @@ class Recipe(Base):
     rtype = Column(Integer, ForeignKey('recipe_type.id', ondelete='SET NULL'), nullable=True)
     comments = relationship('Comment', backref='Recipe', passive_deletes=True)
     searches = relationship('User', secondary='search', backref='Recipe', passive_deletes=True, lazy='dynamic')
-    authors = relationship('User', secondary='author', backref='Recipe', passive_deletes=True, lazy='dynamic')
+    authors = relationship('User', secondary='author', backref='author', passive_deletes=True, lazy='dynamic')
     made = relationship('Ingredient', secondary=made, backref='Recipe', passive_deletes=True, lazy='dynamic')
 
 

@@ -27,7 +27,7 @@ class User(Base):
     sessions = relationship('Session', backref='user', passive_deletes=True)
     comments = relationship('Comment', backref='user', passive_deletes=True)
     searches = relationship('Recipe', secondary=search, backref='user', passive_deletes=True, lazy='dynamic')
-    authors = relationship('Recipe', secondary=author, backref='user', passive_deletes=True, lazy='dynamic')
+    authors = relationship('Recipe', secondary=author, backref='author', passive_deletes=True, lazy='dynamic')
 
 
 def get_expire_date():
@@ -39,3 +39,11 @@ class Session(Base):
     uid = Column(Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True)
     session = Column(String(24), nullable=False, primary_key=True, unique=True)
     expire = Column(DateTime, nullable=True, default=get_expire_date)
+
+
+class Comment(Base):
+    __tablename__ = 'comment'
+    id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    recipe_id = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
+    comment = Column(String, nullable=False)
+    rate = Column(Integer, nullable=False)
