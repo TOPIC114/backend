@@ -7,13 +7,13 @@ from ..db import Base
 
 search = Table('search', Base.metadata,
                Column('uid', Integer, ForeignKey('user.id'), primary_key=True),
-               Column('rid', Integer, ForeignKey('Recipe.id'), primary_key=True),
+               Column('rid', Integer, ForeignKey('recipe.id'), primary_key=True),
                Column('search_date', DateTime, nullable=False)
                )
 
 author = Table('author', Base.metadata,
                Column('uid', Integer, ForeignKey('user.id'), primary_key=True),
-               Column('rid', Integer, ForeignKey('Recipe.id'), primary_key=True)
+               Column('rid', Integer, ForeignKey('recipe.id'), primary_key=True)
                )
 
 
@@ -44,6 +44,6 @@ class Session(Base):
 class Comment(Base):
     __tablename__ = 'comment'
     uid = Column(Integer, ForeignKey('user.id'), primary_key=True)
-    rid = Column(Integer, ForeignKey('Recipe.id'), primary_key=True)
+    rid = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
     comment = Column(String, nullable=False)
     rate = Column(Integer, nullable=False)
