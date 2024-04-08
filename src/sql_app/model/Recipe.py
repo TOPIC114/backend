@@ -16,7 +16,7 @@ class Recipe(Base):
     name = Column(String(32), nullable=False)
     description = Column(String(60), nullable=False)
     video_link = Column(String(256), nullable=True)
-    rtype = Column(Integer, ForeignKey('recipe_type.id', ondelete='SET NULL'))
+    rtype = Column(Integer, ForeignKey('recipe_type.id', ondelete='SET NULL'), nullable=True)
     comments = relationship('Comment', backref='Recipe', passive_deletes=True)
     searches = relationship('User', secondary='search', backref='Recipe', passive_deletes=True, lazy='dynamic')
     authors = relationship('User', secondary='author', backref='Recipe', passive_deletes=True, lazy='dynamic')
