@@ -23,4 +23,4 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession):
     except Exception as e:
         await db.rollback()
         raise e
-    return user
+    return {'message': 'Register success'}
