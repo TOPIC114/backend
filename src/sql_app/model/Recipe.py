@@ -23,11 +23,11 @@ class Recipe(Base):
     made = relationship('Ingredient', secondary=made, backref='Recipe', passive_deletes=True, lazy='dynamic')
 
 
-class Recipe_Type(Base):
+class RecipeType(Base):
     __tablename__ = 'recipe_type'
     id = Column(Integer, primary_key=True)
     name = Column(String(16), nullable=False)
-    recipes = relationship('Recipe', backref='Recipe_Type', lazy='dynamic')
+    recipes = relationship('Recipe', backref='RecipeType', lazy='dynamic')
 
 
 class Ingredient(Base):
