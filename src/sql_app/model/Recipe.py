@@ -27,7 +27,7 @@ class Recipe_Type(Base):
     __tablename__ = 'recipe_type'
     id = Column(Integer, primary_key=True)
     name = Column(String(16), nullable=False)
-    recipes = relationship('Recipe', backref='Recipe_Type', passive_deletes=True, lazy='dynamic')
+    recipes = relationship('Recipe', backref='Recipe_Type', lazy='dynamic')
 
 
 class Ingredient(Base):
