@@ -6,14 +6,14 @@ from sqlalchemy.orm import relationship
 from ..db import Base
 
 search = Table('search', Base.metadata,
-               Column('uid', Integer, ForeignKey('user.id'), primary_key=True),
-               Column('rid', Integer, ForeignKey('recipe.id'), primary_key=True),
+               Column('uid', Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True),
+               Column('rid', Integer, ForeignKey('recipe.id', ondelete="CASCADE"), primary_key=True),
                Column('search_date', DateTime, nullable=False)
                )
 
 author = Table('author', Base.metadata,
-               Column('uid', Integer, ForeignKey('user.id'), primary_key=True),
-               Column('rid', Integer, ForeignKey('recipe.id'), primary_key=True)
+               Column('uid', Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True),
+               Column('rid', Integer, ForeignKey('recipe.id', ondelete="CASCADE"), primary_key=True)
                )
 
 
@@ -36,14 +36,6 @@ def get_expire_date():
 
 class Session(Base):
     __tablename__ = 'session'
-    uid = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    uid = Column(Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True)
     session = Column(String(24), nullable=False, primary_key=True, unique=True)
     expire = Column(DateTime, nullable=True, default=get_expire_date)
-
-
-class Comment(Base):
-    __tablename__ = 'comment'
-    uid = Column(Integer, ForeignKey('user.id'), primary_key=True)
-    rid = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
-    comment = Column(String, nullable=False)
-    rate = Column(Integer, nullable=False)
