@@ -108,9 +108,6 @@ async def logout(db: AsyncDBSession, token: str = Security(api_key_header)) -> S
     401: {"description": "Unauthorized - Invalid token"}
 })
 async def logout(db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
-    if not user:
-        raise HTTPException(status_code=401, detail='Invalid token')
-
     stmt2 = delete(Session).where(Session.uid == user.id)
     await db.execute(stmt2)
     await db.commit()
