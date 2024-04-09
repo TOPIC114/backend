@@ -41,3 +41,8 @@ x-api-key: {{auth_token}}
 GET http://localhost:8000/user/searches
 Content-Type: application/json
 x-api-key: {{auth_token}}
+
+###
+GET http://localhost:8000/user/logout
+Content-Type: application/json
+x-api-key: {{auth_token}}
