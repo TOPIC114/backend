@@ -1,10 +1,13 @@
+import uuid
+
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 
-from request.user import RegisterRequest
+from request.user import RegisterRequest, LoginRequest
 from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
-from sql_app.model.User import User
+from sql_app.model.User import User, Session
 
 user_root = APIRouter(
     prefix='/user',
@@ -27,3 +30,27 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession) -> Success
         await db.rollback()
         raise e
     return {'message': 'Register success'}
+
+
+@user_root.post('/login', status_code=200, responses={
+    401: {"description": "Unauthorized - Wrong username/email or password"}
+})
+async def login(info: LoginRequest, db: AsyncDBSession):
+    stmt = select(User).where(or_(User.username == info.username, User.email == info.username)).limit(1)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+    if not user or user.password != info.password:
+        raise HTTPException(status_code=401, detail='Wrong username/email or password')
+
+    token = uuid.uuid4().hex
+    session = Session(uid=user.id, session=token)
+
+    try:
+        db.add(session)
+        await db.commit()
+        await db.refresh(session)
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+    return {'token': token}
