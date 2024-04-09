@@ -1,0 +1,48 @@
+POST http://localhost:8000/user/register
+Content-Type: application/json
+
+{
+  "username": "{{$random.alphabetic(12)}}",
+  "password": "test2234",
+  "email": "{{$random.alphabetic(8)}}@gmail.com"
+}
+###
+
+### Login
+POST http://localhost:8000/user/login
+Content-Type: application/json
+
+{
+  "username": "test1234",
+  "password": "test2234"
+}
+
+###
+
+### Login
+POST http://localhost:8000/user/login
+Content-Type: application/json
+
+{
+  "username": "test2234@gmail.com",
+  "password": "test2234"
+}
+
+> {% client.global.set("auth_token", response.body.token); %}
+
+
+###
+GET http://localhost:8000/user/me
+Content-Type: application/json
+x-api-key: {{auth_token}}
+
+
+###
+GET http://localhost:8000/user/searches
+Content-Type: application/json
+x-api-key: {{auth_token}}
+
+###
+GET http://localhost:8000/user/logout
+Content-Type: application/json
+x-api-key: {{auth_token}}
