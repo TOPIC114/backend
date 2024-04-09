@@ -70,6 +70,8 @@ async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)
     return user
 
 
-@user_root.get('/me', status_code=200)
+@user_root.get('/me', status_code=200, responses={
+    401: {"description": "Unauthorized - Invalid token"}
+})
 async def get_user_info(user: User = Depends(token_verify)) -> UserInfoResponse:
     return {'id': user.id, 'username': user.username, 'email': user.email, 'level': user.level}
