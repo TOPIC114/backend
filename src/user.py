@@ -92,12 +92,13 @@ async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token
     401: {"description": "Unauthorized - Invalid token"}
 })
 async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)) -> SuccessResponse:
-    stmt = select(Session).join_from(User, Session).where(Session.session == token).limit(1)
-    result = await db.execute(stmt)
-    user = result.scalars().first()
-    if not user:
+    stmt1 = select(Session).where(Session.session == token).limit(1)
+    result = await db.execute(stmt1)
+    sessions = result.scalars().first()
+    if not sessions:
         raise HTTPException(status_code=401, detail='Invalid token')
 
-    stmt = delete(Session).where(Session.session == token)
-    await db.execute(stmt)
+    stmt2 = delete(Session).where(Session.session == token)
+    await db.execute(stmt2)
+    await db.commit()
     return {'message': 'Logout success'}
