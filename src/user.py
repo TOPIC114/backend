@@ -6,6 +6,7 @@ from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 
 from request.user import RegisterRequest, LoginRequest
+from response.user import UserInfoResponse
 from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
 from sql_app.model.User import User, Session
@@ -61,14 +62,14 @@ api_key_header = APIKeyHeader(name='X-API-Key')
 
 
 async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)):
-    stmt = select(Session).where(Session.session == token).limit(1)
+    stmt = select(User).join_from(User, Session).where(Session.session == token).limit(1)
     result = await db.execute(stmt)
-    session = result.scalars().first()
-    if not session:
+    user = result.scalars().first()
+    if not user:
         raise HTTPException(status_code=401, detail='Invalid token')
-    return session.uid
+    return user
 
 
 @user_root.get('/me', status_code=200)
-async def get_user_info(uid: int = Depends(token_verify)):
-    return {'uid': uid}
+async def get_user_info(user: User = Depends(token_verify)) -> UserInfoResponse:
+    return {'id': user.id, 'username': user.username, 'email': user.email, 'level': user.level}
