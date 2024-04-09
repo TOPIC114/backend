@@ -91,7 +91,7 @@ async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token
 @user_root.get('/logout', status_code=200, responses={
     401: {"description": "Unauthorized - Invalid token"}
 })
-async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)) -> SuccessResponse:
+async def logout(db: AsyncDBSession, token: str = Security(api_key_header)) -> SuccessResponse:
     stmt1 = select(Session).where(Session.session == token).limit(1)
     result = await db.execute(stmt1)
     sessions = result.scalars().first()
