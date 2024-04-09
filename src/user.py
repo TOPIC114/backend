@@ -1,6 +1,7 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Security, Depends
+from fastapi.security import APIKeyHeader
 from sqlalchemy import select, or_
 from sqlalchemy.exc import IntegrityError
 
@@ -54,3 +55,20 @@ async def login(info: LoginRequest, db: AsyncDBSession):
         raise e
 
     return {'token': token}
+
+
+api_key_header = APIKeyHeader(name='X-API-Key')
+
+
+async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)):
+    stmt = select(Session).where(Session.session == token).limit(1)
+    result = await db.execute(stmt)
+    session = result.scalars().first()
+    if not session:
+        raise HTTPException(status_code=401, detail='Invalid token')
+    return session.uid
+
+
+@user_root.get('/me', status_code=200)
+async def get_user_info(uid: int = Depends(token_verify)):
+    return {'uid': uid}
