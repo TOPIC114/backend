@@ -37,7 +37,7 @@ def get_expire_date():
 class Session(Base):
     __tablename__ = 'session'
     uid = Column(Integer, ForeignKey('user.id', ondelete="CASCADE"), primary_key=True)
-    session = Column(String(24), nullable=False, primary_key=True, unique=True)
+    session = Column(String(32), nullable=False, primary_key=True, unique=True)
     expire = Column(DateTime, nullable=True, default=get_expire_date)
 
 
