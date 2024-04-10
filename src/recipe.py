@@ -39,8 +39,8 @@ async def search_recipe(info: RecipeSearch, db: AsyncDBSession):
 
 @recipe_root.get("/content/{rid}", status_code=200)
 async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)):
-    stmt = select(Recipe).where(Recipe.id == rid).limit(1)
-    result = await db.execute(stmt)
+    stmt1 = select(Recipe).where(Recipe.id == rid).limit(1)
+    result = await db.execute(stmt1)
     recipe = result.scalars().first()
 
     recipe_id = recipe.id
@@ -52,8 +52,18 @@ async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_v
     if not recipe:
         raise HTTPException(status_code=404)
 
-    history = search.insert().values(uid=user.id, rid=rid, search_date=datetime.now())
-    await db.execute(history)
+    stmt2 = (select(Recipe).join_from(search, Recipe)
+             .where(search.c.uid == user.id, search.c.rid == rid))
+    result = await db.execute(stmt2)
+    history = result.scalars().first()
+
+    if history:
+        new = (search.update().where(search.c.uid == user.id, search.c.rid == rid)
+                  .values(search_date=datetime.now()))
+    else:
+        new = search.insert().values(uid=user.id, rid=rid, search_date=datetime.now())
+
+    await db.execute(new)
     await db.commit()
 
     return {"id": recipe_id, "name": name, "description": description, "video_link": video_link, "rtype": rtype}
