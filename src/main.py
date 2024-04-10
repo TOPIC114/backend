@@ -4,6 +4,7 @@ from fastapi import FastAPI, APIRouter
 
 from test import test_router
 from user import user_root
+from recipe import recipe_root
 
 logging.basicConfig(level=logging.DEBUG)
 app = FastAPI()
@@ -23,3 +24,4 @@ async def say_hello(name: str):
 app.include_router(router)
 app.include_router(test_router)
 app.include_router(user_root)
+app.include_router(recipe_root)
