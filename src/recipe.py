@@ -58,8 +58,7 @@ async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_v
     history = result.scalars().first()
 
     if history:
-        new = (search.update().where(search.c.uid == user.id, search.c.rid == rid)
-                  .values(search_date=datetime.now()))
+        new = (search.update().where(search.c.uid == user.id, search.c.rid == rid).values(search_date=datetime.now()))
     else:
         new = search.insert().values(uid=user.id, rid=rid, search_date=datetime.now())
 
