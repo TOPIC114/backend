@@ -76,6 +76,12 @@ async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token
     if user.level < 2:
         raise HTTPException(status_code=404)
 
+    stmt1 = select(Recipe).where(Recipe.id == rid).limit(1)
+    result = await db.execute(stmt1)
+    recipe = result.scalars().first()
+    if not recipe:
+        raise HTTPException(status_code=404)
+
     stmt1 = select(User).join_from(author, User).where(author.c.uid == user.id)
     result = await db.execute(stmt1)
     recipe_author = result.scalars().first()
