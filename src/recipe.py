@@ -17,15 +17,18 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
         raise HTTPException(status_code=404)
     new_recipe = Recipe(name=info.name, description=info.description,
                         video_link=info.video_link, rtype=info.rtype)
+    uid = user.id
     try:
         db.add(new_recipe)
         await db.commit()
         await db.refresh(new_recipe)
+        await db.execute(author.insert().values(uid=uid, rid=new_recipe.id))
+        await db.commit()
     except Exception as e:
         await db.rollback()
         raise e
 
-    return new_recipe
+    return {'message': 'upload success'}
 
 
 @recipe_root.post("/search", status_code=200)
@@ -58,7 +61,7 @@ async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_v
     history = result.scalars().first()
 
     if history:
-        new = (search.update().where(search.c.uid == user.id, search.c.rid == rid).values(search_date=datetime.now()))
+        new = search.update().where(search.c.uid == user.id, search.c.rid == rid).values(search_date=datetime.now())
     else:
         new = search.insert().values(uid=user.id, rid=rid, search_date=datetime.now())
 
