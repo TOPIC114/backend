@@ -75,7 +75,22 @@ async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_v
 async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)):
     if user.level < 2:
         raise HTTPException(status_code=404)
-    stmt = delete(Recipe).where(Recipe.id == rid)
-    await db.execute(stmt)
-    await db.commit()
+
+    stmt1 = select(User).join_from(author, User).where(author.c.uid == user.id)
+    result = await db.execute(stmt1)
+    recipe_author = result.scalars().first()
+
+    if not recipe_author:
+        raise HTTPException(status_code=404)
+
+    if user.level == 127 or user.id == recipe_author.id:
+        stmt2 = delete(Recipe).where(Recipe.id == rid)
+        await db.execute(stmt2)
+        await db.commit()
+        stmt3 = delete(author).where(author.c.rid == rid)
+        await db.execute(stmt3)
+        await db.commit()
+    else:
+        raise HTTPException(status_code=404)
+
     return {'message': 'deleted recipe'}
