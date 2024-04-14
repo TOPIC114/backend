@@ -7,7 +7,3 @@ class RecipeInfoResponse(BaseModel):
     description: str
     video_link: str
     rtype: int
-
-
-class SearchRecipeResponse(BaseModel):
-    recipes: list[RecipeInfoResponse]
