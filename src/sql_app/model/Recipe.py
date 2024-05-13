@@ -1,12 +1,13 @@
 from sqlalchemy.orm import relationship
 
 from ..db import Base
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, FLOAT
 
 made = Table(
     'made', Base.metadata,
     Column('rid', Integer, ForeignKey('recipe.id', ondelete='CASCADE')),
-    Column('iid', Integer, ForeignKey('ingredient.id', ondelete='CASCADE'))
+    Column('iid', Integer, ForeignKey('ingredient.id', ondelete='CASCADE')),
+    Column('weight', FLOAT, nullable=False, default=1.0)
 )
 
 
@@ -34,6 +35,5 @@ class Ingredient(Base):
     __tablename__ = 'ingredient'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(32), nullable=False)
-    weight = Column(Integer, nullable=False)
     mandarin = Column(String(16), nullable=False)
     made = relationship('Recipe', secondary=made, backref='Ingredient', passive_deletes=True, lazy='dynamic')
