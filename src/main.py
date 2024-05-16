@@ -3,6 +3,7 @@ import logging
 from fastapi import FastAPI, APIRouter
 
 from detect import detection_router
+from sql_app.ingredient import i_router
 from test import test_router
 from user import user_root
 from recipe import recipe_root
@@ -27,3 +28,4 @@ app.include_router(test_router)
 app.include_router(user_root)
 app.include_router(recipe_root)
 app.include_router(detection_router)
+app.include_router(i_router)
