@@ -1,4 +1,5 @@
 import io
+import os
 import uuid
 from datetime import datetime
 
@@ -6,7 +7,7 @@ import PIL
 import aiofiles
 import numpy as np
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update, delete
 from ultralytics import YOLO
 
 from sql_app.db import AsyncDBSession
@@ -78,7 +79,8 @@ async def detect_image(version: str, db: AsyncDBSession, image: UploadFile = Fil
 
 
 @detection_router.post("/upload/pt")
-async def upload_pt(db: AsyncDBSession, description: str, version: str, user: User = Depends(token_verify),
+async def upload_pt(db: AsyncDBSession, description: str, version: str,
+                    user: User = Depends(token_verify),
                     pt: UploadFile = File(...)):
     if user.level <= 127:
         raise HTTPException(status_code=401, detail='You are not administrator')
@@ -95,25 +97,45 @@ async def upload_pt(db: AsyncDBSession, description: str, version: str, user: Us
     #     'version': '1.0'
     # }
 
-    model_information = Model(
-        file_path=filename,
-        description=description,
-        size=size,
-        version=version,
-        update_date=datetime.now()
-    )
+    stmt = select(Model).where(Model.version == version)
+    result = (await db.execute(stmt)).scalars().first()
 
-    try:
-        db.add(model_information)
-        await db.commit()
-        await db.refresh(model_information)
-    except Exception as e:
-        await db.rollback()
-        raise e
+    if result:
+        path: str = result.file_path
+        os.remove(path)
+        stmt = (update(Model).where(Model.version == version).values(
+            file_path=filename,
+            description=description,
+            size=size,
+            update_date=datetime.now()
+        ))
+        try:
+            await db.execute(stmt)
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            raise e
 
-    model = YOLO(model_information.file_path)
-    print("yo wtf")
-    print(model.names)
+
+
+    else:
+        model_information = Model(
+            file_path=filename,
+            description=description,
+            size=size,
+            version=version,
+            update_date=datetime.now()
+        )
+
+        try:
+            db.add(model_information)
+            await db.commit()
+            await db.refresh(model_information)
+        except Exception as e:
+            await db.rollback()
+            raise e
+
+    model = YOLO(filename)
 
     for _, j in model.names.items():
         stmt = select(Ingredient).where(Ingredient.name == j)
@@ -129,3 +151,42 @@ async def upload_pt(db: AsyncDBSession, description: str, version: str, user: Us
                 raise e
 
     return {'message': 'Register success'}
+
+
+@detection_router.get("/versions")
+async def get_versions(db: AsyncDBSession):
+    stmt = select(Model).distinct()
+    result = (await db.execute(stmt)).scalars().all()
+    return result
+
+
+@detection_router.delete("/{version}/delete")
+async def delete_version(version: str, db: AsyncDBSession, user: User = Depends(token_verify)):
+    if user.level <= 127:
+        raise HTTPException(status_code=401, detail='You are not administrator')
+
+    stmt = select(Model).where(Model.version == version)
+    result = (await db.execute(stmt)).scalars().first()
+
+    if not result:
+        raise HTTPException(status_code=404, detail='Model not found')
+
+    path = result.file_path
+    os.remove(path)
+
+    stmt = select(Model).where(Model.version == version)
+    result = (await db.execute(stmt)).scalars().first()
+
+    if not result:
+        raise HTTPException(status_code=404, detail='Model not found')
+
+    stmt = delete(Model).where(Model.version == version)
+
+    try:
+        await db.execute(stmt)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+    return {'message': 'Delete success'}
