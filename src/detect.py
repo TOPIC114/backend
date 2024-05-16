@@ -11,6 +11,7 @@ from ultralytics import YOLO
 
 from sql_app.db import AsyncDBSession
 from sql_app.model.Model import Model
+from sql_app.model.Recipe import Ingredient
 from sql_app.model.User import User
 from user import token_verify
 
@@ -78,5 +79,22 @@ async def upload_pt(db: AsyncDBSession, description: str, version: str, user: Us
     except Exception as e:
         await db.rollback()
         raise e
+
+    model = YOLO(model_information.file_path)
+    print("yo wtf")
+    print(model.names)
+
+    for _, j in model.names.items():
+        stmt = select(Ingredient).where(Ingredient.name == j)
+        result = (await db.execute(stmt)).scalars().first()
+        if not result:
+            try:
+                igr = Ingredient(name=j, mandarin="還沒有翻譯")
+                db.add(igr)
+                await db.commit()
+                await db.refresh(igr)
+            except Exception as e:
+                await db.rollback()
+                raise e
 
     return {'message': 'Register success'}
