@@ -20,7 +20,6 @@ detection_router = APIRouter(prefix="/detect", tags=['detect'])
 
 @detection_router.post("/latest/img")
 async def detect_image(db: AsyncDBSession, image: UploadFile = File(...)):
-
     stmt = select(Model).order_by(Model.update_date.desc()).limit(1)
     result = (await db.execute(stmt)).scalars().first()
     model = YOLO(result.file_path)
@@ -40,6 +39,38 @@ async def detect_image(db: AsyncDBSession, image: UploadFile = File(...)):
             index = int(j.cls)
             name = model.names[index]
             conf = j.conf[0]
+            print(name, conf)
+            if conf > 0.5:
+                dict[name] = 1
+
+    return list(dict.keys())
+
+
+@detection_router.post("/{version}/img")
+async def detect_image(version: str, db: AsyncDBSession, image: UploadFile = File(...)):
+    stmt = select(Model).where(Model.version == version).order_by(Model.update_date.desc()).limit(1)
+    result = (await db.execute(stmt)).scalars().first()
+
+    if not result:
+        raise HTTPException(status_code=404, detail='Model not found')
+    model = YOLO(result.file_path)
+
+    contents = await image.read()
+    img = PIL.Image.open(io.BytesIO(contents))
+    img_np = np.array(img)
+
+    result = model(img_np, 0.5)
+
+    dict = {}
+
+    print(model.names)
+
+    for i in result:
+        for j in i.boxes:
+            index = int(j.cls)
+            name = model.names[index]
+            conf = j.conf[0]
+            print(name, conf)
             if conf > 0.5:
                 dict[name] = 1
 
