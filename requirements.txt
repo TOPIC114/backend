@@ -90,5 +90,5 @@ triton==2.3.0
 typing_extensions==4.10.0
 tzdata==2024.1
 ultralytics==8.2.14
-urllib3==2.2.1
+urllib3==2.2.2
 uvicorn==0.29.0
