@@ -11,3 +11,4 @@ class MadeUpload(BaseModel):
 class MadeUploadList(BaseModel):
     rid: int
     iids: List[int]
+
