@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Table, Text
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import relationship
@@ -45,5 +45,5 @@ class Comment(Base):
     __tablename__ = 'comment'
     id = Column(Integer, ForeignKey('user.id'), primary_key=True)
     recipe_id = Column(Integer, ForeignKey('recipe.id'), primary_key=True)
-    comment = Column(String, nullable=False)
+    comment = Column(Text, nullable=False)
     rate = Column(Integer, nullable=False)
