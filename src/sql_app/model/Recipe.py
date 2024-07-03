@@ -42,7 +42,7 @@ class Ingredient(Base):
 
 class SubIngredient(Base):
     __tablename__ = 'sub_ingredient'
-    iid = Column(Integer, ForeignKey('ingredient.id'), unique=True)
-    siid = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True, index=True)
+    iid = Column(Integer, ForeignKey('ingredient.id'), nullable=False)
     name = Column(String(32), nullable=False)
     mandarin = Column(String(16), nullable=False)

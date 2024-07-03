@@ -4,7 +4,7 @@ from fastapi import FastAPI, APIRouter
 
 from detect import detection_router
 from made import m_router
-from sql_app.ingredient import i_router
+from ingredient import i_router
 from test import test_router
 from user import user_root
 from recipe import recipe_root
