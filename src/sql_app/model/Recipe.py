@@ -5,8 +5,8 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey, FLOAT
 
 made = Table(
     'made', Base.metadata,
-    Column('rid', Integer, ForeignKey('recipe.id', ondelete='CASCADE')),
-    Column('iid', Integer, ForeignKey('ingredient.id', ondelete='CASCADE')),
+    Column('rid', Integer, ForeignKey('recipe.id', ondelete='CASCADE'), primary_key=True),
+    Column('iid', Integer, ForeignKey('ingredient.id', ondelete='CASCADE'), primary_key=True),
     Column('weight', FLOAT, nullable=False, default=1.0)
 )
 
