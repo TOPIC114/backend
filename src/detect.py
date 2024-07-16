@@ -20,9 +20,10 @@ from sql_app.model.User import User
 from user import token_verify
 
 import cv2
+import ffmpeg
 
 detection_router = APIRouter(prefix="/detect", tags=['detect'])
-limit = 0.5  # seconds
+limit = 0  # seconds
 
 logger = logging.getLogger(__name__)
 
@@ -227,7 +228,10 @@ async def delete_version(version: str, db: AsyncDBSession, user: User = Depends(
 
 
 def video_processing(model, filename):
-    cap = cv2.VideoCapture(filename)
+
+    ffmpeg.input(f"{filename}").filter('fps', fps=30).filter('scale', width='-2', height='1080').output(f"{filename}-convert.mp4").run()
+
+    cap = cv2.VideoCapture(f"{filename}-convert.mp4")
     framerate = cap.get(cv2.CAP_PROP_FPS)
 
     result = {}
@@ -242,12 +246,11 @@ def video_processing(model, filename):
         detect_obj = {}
         for i in results:
             for j in i.boxes:
-                index = int(j.cls)
-                name = model.names[index]
                 conf = j.conf[0]
-
-                pos = j.xyxy[0]
                 if conf > 0.5:
+                    index = int(j.cls)
+                    name = model.names[index]
+                    pos = j.xyxy[0]
                     if name not in detect_obj:
                         detect_obj[name] = []
                     detect_obj[name].append(pos)
@@ -283,6 +286,7 @@ def video_processing(model, filename):
                 img.save(random_name)
 
     os.remove(filename)
+    os.remove(f"{filename}-convert.mp4")
     return result
 
 
