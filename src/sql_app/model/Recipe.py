@@ -37,7 +37,7 @@ class Ingredient(Base):
     name = Column(String(32), nullable=False)
     mandarin = Column(String(16), nullable=False)
     made = relationship('Recipe', secondary=made, backref='Ingredient', passive_deletes=True, lazy='dynamic')
-    sub = relationship('SubIngredient', secondary='sub_ingredient', backref='Ingredient', passive_deletes=True, lazy='dynamic')
+    sub = relationship('SubIngredient', backref='Ingredient', passive_deletes=True, lazy='dynamic')
 
 
 class SubIngredient(Base):

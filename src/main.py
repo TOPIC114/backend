@@ -1,6 +1,8 @@
 import logging
+import os
 
 from fastapi import FastAPI, APIRouter
+from starlette.staticfiles import StaticFiles
 
 from detect import detection_router
 from made import m_router
@@ -31,3 +33,6 @@ app.include_router(recipe_root)
 app.include_router(detection_router)
 app.include_router(i_router)
 app.include_router(m_router)
+
+os.makedirs('img', exist_ok=True)
+app.mount("/img", StaticFiles(directory="img"), name="img")

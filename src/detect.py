@@ -7,6 +7,7 @@ from datetime import datetime
 import PIL
 import aiofiles
 import numpy as np
+from PIL import Image, ImageDraw
 from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy import select, update, delete
 from starlette.concurrency import run_in_threadpool
@@ -21,10 +22,10 @@ from user import token_verify
 import cv2
 
 detection_router = APIRouter(prefix="/detect", tags=['detect'])
-limit = 0.1  # seconds
-
+limit = 0.5  # seconds
 
 logger = logging.getLogger(__name__)
+
 
 @detection_router.post("/latest/img")
 async def detect_image(db: AsyncDBSession, image: UploadFile = File(...)):
@@ -45,11 +46,21 @@ async def detect_image(db: AsyncDBSession, image: UploadFile = File(...)):
             index = int(j.cls)
             name = model.names[index]
             conf = j.conf[0]
-            print(name, conf)
-            if conf > 0.5:
-                dict[name] = 1
 
-    return list(dict.keys())
+            if conf > 0.5:
+                if name not in dict:
+                    dict[name] = []
+                x1, y1, x2, y2 = j.xyxy[0]
+                img_copy = img.copy()
+                img_draw = ImageDraw.Draw(img_copy)
+                img_draw.rectangle([(x1, y1), (x2, y2)], outline='red', width=4)
+
+                random_name = uuid.uuid4().hex
+                img_copy.save(f"img/{random_name}.jpg")
+
+                dict[name].append(f"img/{random_name}.jpg")
+
+    return dict
 
 
 @detection_router.post("/{version}/img")
@@ -72,13 +83,24 @@ async def detect_image(version: str, db: AsyncDBSession, image: UploadFile = Fil
     print(model.names)
 
     for i in result:
+        print(i.plot())  # show image!
         for j in i.boxes:
             index = int(j.cls)
             name = model.names[index]
             conf = j.conf[0]
-            print(name, conf)
+
             if conf > 0.5:
-                dict[name] = 1
+                if name not in dict:
+                    dict[name] = []
+                x1, y1, x2, y2 = j.xyxy[0]
+                img_copy = img.copy()
+                img_draw = ImageDraw.Draw(img_copy)
+                img_draw.rectangle([(x1, y1), (x2, y2)], outline='red', width=4)
+
+                random_name = uuid.uuid4().hex
+                img_copy.save(f"img/{random_name}.jpg")
+
+                dict[name].append(f"img/{random_name}.jpg")
 
     return list(dict.keys())
 
@@ -208,13 +230,13 @@ def video_processing(model, filename):
     cap = cv2.VideoCapture(filename)
     framerate = cap.get(cv2.CAP_PROP_FPS)
 
-    list_of_detected = {}
+    result = {}
     continue_detect = {}
     while True:
         ret, frame = cap.read()
         if not ret:
             break
-
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         results = model(frame, 0.5, verbose=False)
 
         detect_obj = {}
@@ -223,26 +245,45 @@ def video_processing(model, filename):
                 index = int(j.cls)
                 name = model.names[index]
                 conf = j.conf[0]
-                if conf > 0.5:
-                    detect_obj[name] = True
 
-        for i in detect_obj.keys():
-            if i in continue_detect:
-                continue_detect[i] = continue_detect[i] + 1
+                pos = j.xyxy[0]
+                if conf > 0.5:
+                    if name not in detect_obj:
+                        detect_obj[name] = []
+                    detect_obj[name].append(pos)
+
+        del_list = []
+
+        for key in continue_detect.keys():
+            if key not in detect_obj:  # not continue detected the object so remove from it.
+                del_list.append(key)
+
+        for i in del_list:
+            del continue_detect[i]
+
+        for key in detect_obj.keys():
+            if key not in continue_detect:
+                continue_detect[key] = 0
             else:
-                continue_detect[i] = 1
+                continue_detect[key] = continue_detect[key] + 1
 
         for key, value in continue_detect.items():
-            if value > framerate * limit:
-                list_of_detected[key] = 1
-                continue_detect[key] = 0
+            if value == int(framerate * limit):
+                if key not in result:
+                    result[key] = []
+                random_name = f"img/{uuid.uuid4().hex}.jpg"
 
-        for key in list_of_detected.keys():
-            if key not in continue_detect:  # not continue detected the object so remove from it.
-                del continue_detect[key]
+                result[key].append(random_name)
+
+                img = Image.fromarray(frame.astype('uint8'))
+                img_draw = ImageDraw.Draw(img)
+
+                for x1, y1, x2, y2 in detect_obj[key]:
+                    img_draw.rectangle([(x1, y1), (x2, y2)], outline='red', width=4)
+                img.save(random_name)
 
     os.remove(filename)
-    return list(list_of_detected.keys())
+    return result
 
 
 # only support mp4 file
