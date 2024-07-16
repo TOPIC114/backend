@@ -299,7 +299,7 @@ async def detect_video(db: AsyncDBSession, video: UploadFile = File(...)):
 
     contents = await video.read()
 
-    filename = f"temp/{uuid.uuid4().hex}.mp4"
+    filename = f"temp/{uuid.uuid4().hex}"
 
     async with aiofiles.open(filename, 'wb') as output_file:
         await output_file.write(contents)
