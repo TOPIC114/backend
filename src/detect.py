@@ -229,7 +229,7 @@ async def delete_version(version: str, db: AsyncDBSession, user: User = Depends(
 
 def video_processing(model, filename):
 
-    ffmpeg.input(f"{filename}").filter('fps', fps=30).filter('scale', width='-2', height='1080').output(f"{filename}-convert.mp4").run()
+    ffmpeg.input(f"{filename}").filter('fps', fps=30).filter('scale', height='1080', width='-2').output(f"{filename}-convert.mp4").run()
 
     cap = cv2.VideoCapture(f"{filename}-convert.mp4")
     framerate = cap.get(cv2.CAP_PROP_FPS)
