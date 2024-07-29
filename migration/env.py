@@ -30,10 +30,11 @@ config.set_main_option('sqlalchemy.url', os.environ.get(
 from src.sql_app.db import Base
 from src.sql_app.model.User import *
 from src.sql_app.model.Recipe import *
+from src.sql_app.model.Video import *
 from src.sql_app.model.Model import *
 
-
 target_metadata = Base.metadata
+
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
