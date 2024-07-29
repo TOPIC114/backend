@@ -92,3 +92,21 @@ async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_
         raise e
 
     return {"message": "mark successfully"}
+
+
+@video_root.post("/mark/{id}/ready")  # ready to detected
+async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_verify)) -> SuccessResponse:
+    if user.level < 127:
+        raise HTTPException(status_code=401, detail='You are not administrator')
+
+    stmt = update(Video).where(Video.id == id).values(is_reviewed=False)
+
+    try:
+        await db.execute(stmt)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+    return {"message": "mark successfully"}
+
