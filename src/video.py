@@ -61,7 +61,7 @@ async def list_video(db: AsyncDBSession, user: User = Depends(token_verify)):
 
 
 @video_root.post('/mark/{id}/complete')
-async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_verify))-> SuccessResponse:
+async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_verify)) -> SuccessResponse:
     if user.level < 127:
         raise HTTPException(status_code=401, detail='You are not administrator')
 
@@ -78,7 +78,7 @@ async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_
 
 
 @video_root.post('/mark/{id}/reviewed')
-async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_verify))-> SuccessResponse:
+async def mark_complete(db: AsyncDBSession, id: int, user: User = Depends(token_verify)) -> SuccessResponse:
     if user.level < 127:
         raise HTTPException(status_code=401, detail='You are not administrator')
 
