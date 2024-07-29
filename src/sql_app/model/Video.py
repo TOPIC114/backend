@@ -11,7 +11,7 @@ class Video(Base):
     yt_link = Column(String(128), unique=True)
     thumbnail_url = Column(String(128))
     author_id = Column(String(16))
-    is_reviewed = Column(Boolean, default=False)
+    is_reviewed = Column(Boolean, default=None, nullable=True)
     is_complete = Column(Boolean, default=False)
 
 
