@@ -1,2 +1,2 @@
-__all__ = ['User', 'Recipe', 'Model']
+__all__ = ['User', 'Recipe', 'Model','Video']
 

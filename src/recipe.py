@@ -15,7 +15,7 @@ recipe_root = APIRouter(prefix="/recipes", tags=['recipe'])
 
 @recipe_root.post("/upload", status_code=201)
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
-    if user.level < 2:
+    if user.level < 128:
         raise HTTPException(status_code=404)
     new_recipe = Recipe(name=info.name, description=info.description,
                         video_link=info.video_link, rtype=info.rtype)
@@ -76,7 +76,7 @@ async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_v
 
 @recipe_root.get("/delete/{rid}", status_code=200)
 async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
-    if user.level < 2:
+    if user.level < 128:
         raise HTTPException(status_code=404)
 
     stmt1 = select(Recipe).where(Recipe.id == rid).limit(1)
