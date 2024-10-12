@@ -14,7 +14,7 @@ made = Table(
 class Recipe(Base):
     __tablename__ = 'recipe'
     id = Column(Integer, primary_key=True)
-    name = Column(String(32), nullable=False)
+    name = Column(String(100), nullable=False)
     description = Column(String(60), nullable=False)
     video_link = Column(String(256), nullable=True)
     rtype = Column(Integer, ForeignKey('recipe_type.id', ondelete='SET NULL'), nullable=True)
