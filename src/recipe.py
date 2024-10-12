@@ -1,6 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.params import Query
+
 from sql_app.db import AsyncDBSession
-from sqlalchemy import select, delete, and_, func
+from sqlalchemy import select, delete, and_, func, text
 
 from request.recipe import *
 from sql_app.model.Recipe import *
@@ -94,14 +96,47 @@ async def delete_recipe_type(tid: int, db: AsyncDBSession, user: User = Depends(
 
     return {'message': 'delete success'}
 
-@recipe_root.post("/search", status_code=200)
-async def search_recipe(info: RecipeSearch, db: AsyncDBSession) -> list[RecipeInfoResponse]:
-    stmt = select(Recipe).where(Recipe.name.like("%" + info.keyword + "%"))
-    result = await db.execute(stmt)
-    recipes = result.scalars().all()
+search_by_iids_stmt = text(
+    """
+    select
+        rid,
+        rtype,
+        r.name as title,
+        SUBSTRING(description, 1, 200) as description_simple
+    FROM backend.made
+    INNER JOIN backend.recipe r
+        on made.rid = r.id
+    WHERE
+        iid IN :iids
+    GROUP BY rid
+    HAVING
+        SUM(made.weight) <> 0
+    ORDER BY
+        SUM(made.weight) desc,
+        COUNT(made.weight) desc,
+        rid
+    LIMIT 100
+    OFFSET :offset
+    """
+)
 
-    return recipes
+@recipe_root.get("/search/iid")
+async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(None)):
+    result = await db.execute(search_by_iids_stmt,{"iids":iids,"offset":offset*100})
+    rows = result.fetchall()
 
+    # Convert results to a list of dictionaries
+    response = [
+        {
+            "rid": row.rid,
+            "rtype": row.rtype,
+            "title": row.title,
+            "desc": row.description_simple,
+        }
+        for row in rows
+    ]
+
+    return response
 
 @recipe_root.get("/content/{rid}", status_code=200)
 async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)) -> RecipeInfoResponse:
