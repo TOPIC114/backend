@@ -12,6 +12,10 @@ from fastapi import APIRouter, UploadFile, File, Depends, HTTPException
 from sqlalchemy import select, update, delete
 from starlette.concurrency import run_in_threadpool
 from ultralytics import YOLO
+from sahi import AutoDetectionModel
+from sahi.predict import get_sliced_prediction
+import asyncio
+import concurrent.futures
 
 from sql_app.db import AsyncDBSession
 from sql_app.model.Model import Model
@@ -23,45 +27,87 @@ import cv2
 import ffmpeg
 
 detection_router = APIRouter(prefix="/detect", tags=['detect'])
-limit = 0  # seconds
+limit = 0.2  # seconds
 
 logger = logging.getLogger(__name__)
 
+detect_process_pool = concurrent.futures.ProcessPoolExecutor(max_workers=2)
+
+# each ingredient's confidence threshold
+confidence_filter = {
+    "mushroom": 0.8,
+    "beef":0.3,
+    "chicken":0.3,
+    "pork":0.3,
+    "noodle":0.75,
+    "common" :0.35 # the ingridient which is not in the filter
+}
+
+def result_processing(img,results): # results:[{"key":[(x1,x2,y1,y2)]}]
+    path = {}
+    for key, points in results.items():
+        img_cp = img.copy()
+        img_draw = ImageDraw.Draw(img_cp)
+        random_name = f"img/{uuid.uuid4().hex}.jpg"
+        for point in points:
+            x1, x2, y1, y2 = point
+            img_draw.rectangle([(x1, y1), (x2, y2)], outline="red", width=3)
+        path[key] = random_name
+        img_cp.save(random_name)
+    return path
+    
+
+def image_processing(image,model_path):
+    model = AutoDetectionModel.from_pretrained(
+        model_type="yolov8",
+        device="cuda:0",
+        model_path=model_path,
+    )
+    results = get_sliced_prediction(image, model, slice_height=500, slice_width=500, overlap_height_ratio=0.2, overlap_width_ratio=0.2)
+    result = {}
+
+    print("%-5s %-20s %-15s %s %s" % ("index", "name", "confidence", "status","threadhold"))
+
+    for idx, det in enumerate(results.object_prediction_list):
+
+        show_log = lambda status,threadhold:print("%-5d %-20s %.13f %-6s %s" % (idx, det.category.name, det.score.value, status, threadhold))    
+        
+
+        if det.category.name not in confidence_filter:
+            threadhold = confidence_filter['common']
+        else:
+            threadhold = confidence_filter[det.category.name]
+
+        if det.score.value < threadhold:
+            show_log("ignore", threadhold)
+            continue
+
+        show_log("keep", threadhold)
+
+        if det.category.name not in result:
+            result[det.category.name] = []
+        result[det.category.name].append([det.bbox.minx, det.bbox.maxx, det.bbox.miny, det.bbox.maxy])
+
+    return result
+
 
 @detection_router.post("/latest/img")
-async def detect_image(db: AsyncDBSession, image: UploadFile = File(...)):
+async def detect_image(db: AsyncDBSession, image: UploadFile = File(...)) -> dict[str,str]:
     stmt = select(Model).order_by(Model.update_date.desc()).limit(1)
     result = (await db.execute(stmt)).scalars().first()
-    model = YOLO(result.file_path)
 
     contents = await image.read()
     img = PIL.Image.open(io.BytesIO(contents))
     img_np = np.array(img)
+    # img_np = img_np[:, :, ::-1]
 
-    result = await run_in_threadpool(model, img_np, 0.5)
+    loop = asyncio.get_event_loop()
+    time_old = datetime.now()
+    det_result = await loop.run_in_executor(detect_process_pool, image_processing, img_np, result.file_path)
+    print(f"take {datetime.now() - time_old} to detect image")
+    result = await loop.run_in_executor(detect_process_pool, result_processing, img, det_result)
 
-    dict = {}
-
-    for i in result:
-        for j in i.boxes:
-            index = int(j.cls)
-            name = model.names[index]
-            conf = j.conf[0]
-
-            if conf > 0.5:
-                if name not in dict:
-                    dict[name] = []
-                x1, y1, x2, y2 = j.xyxy[0]
-                img_copy = img.copy()
-                img_draw = ImageDraw.Draw(img_copy)
-                img_draw.rectangle([(x1, y1), (x2, y2)], outline='red', width=4)
-
-                random_name = uuid.uuid4().hex
-                img_copy.save(f"img/{random_name}.jpg")
-
-                dict[name].append(f"img/{random_name}.jpg")
-
-    return dict
+    return result
 
 
 @detection_router.post("/{version}/img")
@@ -229,7 +275,7 @@ async def delete_version(version: str, db: AsyncDBSession, user: User = Depends(
 
 def video_processing(model, filename):
 
-    ffmpeg.input(f"{filename}").filter('fps', fps=30).filter('scale', height='1280', width='-2').output(f"{filename}-convert.mp4").run()
+    ffmpeg.input(f"{filename}").filter('fps', fps=30).filter('scale', height='1080', width='-2').output(f"{filename}-convert.mp4").run()
 
     cap = cv2.VideoCapture(f"{filename}-convert.mp4")
     framerate = cap.get(cv2.CAP_PROP_FPS)
@@ -240,8 +286,7 @@ def video_processing(model, filename):
         ret, frame = cap.read()
         if not ret:
             break
-        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        results = model(frame, 0.5, verbose=False)
+        results = model(frame, 0.3, verbose=False)
 
         detect_obj = {}
         for i in results:
@@ -278,6 +323,8 @@ def video_processing(model, filename):
 
                 result[key].append(random_name)
 
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
                 img = Image.fromarray(frame.astype('uint8'))
                 img_draw = ImageDraw.Draw(img)
 
@@ -286,7 +333,7 @@ def video_processing(model, filename):
                 img.save(random_name)
 
     os.remove(filename)
-    os.remove(f"{filename}-convert.mp4")
+    # os.remove(f"{filename}-convert.mp4")
     return result
 
 
@@ -305,7 +352,8 @@ async def detect_video(db: AsyncDBSession, video: UploadFile = File(...)):
         await output_file.write(contents)
 
     time_old = datetime.now()
-    result = await run_in_threadpool(video_processing, model, filename)
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(detect_process_pool,video_processing, model, filename)
     logger.info(f"take {datetime.now() - time_old} to detect video")
 
     return result
