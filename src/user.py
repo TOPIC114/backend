@@ -39,7 +39,6 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession) -> Success
     401: {"description": "Unauthorized - Wrong username/email or password"}
 })
 async def login(info: LoginRequest, db: AsyncDBSession):
-    print("wtf")
 
     stmt = select(User).where(or_(User.username == info.username, User.email == info.username)).limit(1)
     result = await db.execute(stmt)
