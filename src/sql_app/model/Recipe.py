@@ -1,7 +1,7 @@
 from sqlalchemy.orm import relationship
 
 from ..db import Base
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, FLOAT
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, FLOAT, Text
 
 made = Table(
     'made', Base.metadata,
@@ -15,7 +15,7 @@ class Recipe(Base):
     __tablename__ = 'recipe'
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    description = Column(String(60), nullable=False)
+    description = Column(Text, nullable=False)
     video_link = Column(String(256), nullable=True)
     rtype = Column(Integer, ForeignKey('recipe_type.id', ondelete='SET NULL'), nullable=True)
     comments = relationship('Comment', backref='Recipe', passive_deletes=True)
