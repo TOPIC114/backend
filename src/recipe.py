@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -16,8 +17,8 @@ from discord_webhook import DiscordWebhook
 
 
 recipe_root = APIRouter(prefix="/recipes", tags=['recipe'])
-type_webhook = "https://discord.com/api/webhooks/1292723695508520960/nGF1q2OZoDr6zvd9NLtifRfdZVSC_6bGJkoyH23B_DU5FfwzH7SK3XqC1Yg19FhST7JG"
-recipe_webhook = "https://discord.com/api/webhooks/1293610954575319172/P2m-2Z5aXM99fWX_Xn3RKNQyOnAbbCzm9XHDW5F_IZZZOHy1ikmli0_ZIkc1FnkKw49a"
+type_webhook = os.getenv("type_webhook")
+recipe_webhook = os.getenv("recipe_webhook")
 
 @recipe_root.post("/create")
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)):
@@ -101,15 +102,22 @@ async def delete_recipe_type(tid: int, db: AsyncDBSession, user: User = Depends(
 search_by_iids_stmt = text(
     """
     select
-        rid,
-        rtype,
+        made.rid as rid,
+        u.username as author,
+        rt.name as rtype,
         r.name as title,
-        SUBSTRING(description, 1, 200) as description_simple
+        SUBSTRING(description,1,300) as description
     FROM backend.made
     INNER JOIN backend.recipe r
         on made.rid = r.id
+    INNER JOIN backend.author a
+        on backend.made.rid = a.rid
+    INNER JOIN backend.user u
+        on a.uid = u.id
+    INNER JOIN backend.recipe_type rt
+        on r.rtype = rt.id
     WHERE
-        iid IN :iids
+        iid IN (17,73,30,15)
     GROUP BY rid
     HAVING
         SUM(made.weight) <> 0
@@ -122,8 +130,56 @@ search_by_iids_stmt = text(
     """
 )
 
+search_by_keyword="""
+    select
+        r.id as rid,
+        r.name as title,
+        username as author,
+        rt.name as rt,
+        SUBSTRING(r.description,1,300) as description
+    FROM backend.recipe r
+    INNER JOIN backend.author a
+        ON r.id = a.rid
+    INNER JOIN backend.user
+        ON a.uid = user.id
+    INNER JOIN backend.recipe_type rt
+        on r.rtype = rt.id
+    INNER JOIN (
+        SELECT rid, COUNT(iid) as count
+        FROM made
+        GROUP BY rid
+    ) as ic
+    ON ic.rid = r.id
+    WHERE
+        r.name LIKE CONCAT('%',:keyword,'%') OR
+        r.description LIKE CONCAT('%',:keyword,'%') OR
+        rt.name LIKE CONCAT('%',:keyword,'%') OR
+        username LIKE CONCAT('%',:keyword,'%')
+    ORDER BY
+        CASE
+            WHEN rt.name = :keyword THEN 1
+            WHEN rt.name LIKE CONCAT('%',:keyword,'%') THEN 2
+            ELSE 3
+        END,
+        CASE
+            WHEN title = :keyword THEN 1
+            WHEN title LIKE CONCAT('%',:keyword,'%') THEN 2
+            ELSE 3
+        END,
+        ic.count
+        ,
+        CASE
+            WHEN author = :keyword THEN 1
+            WHEN author LIKE CONCAT('%',:keyword,'%') THEN 2
+            ELSE 3
+        END,
+        r.id
+    LIMIT 100
+    OFFSET :offset
+"""
+
 @recipe_root.get("/search/iid")
-async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(None)):
+async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(None)) -> List[RecipeSearchResponse]:
     result = await db.execute(search_by_iids_stmt,{"iids":iids,"offset":offset*100})
     rows = result.fetchall()
 
@@ -133,7 +189,25 @@ async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(N
             "rid": row.rid,
             "rtype": row.rtype,
             "title": row.title,
-            "desc": row.description_simple,
+            "author":row.author,
+            "description": row.description,
+        }
+        for row in rows
+    ]
+
+    return response
+
+@recipe_root.get("/search/keyword")
+async def search_by_keyword(keyword:str, offset:int, db: AsyncDBSession) -> List[RecipeSearchResponse]:
+    result = await db.execute(search_by_keyword,{"keyword":keyword,"offset":offset*100})
+    rows = result.fetchall()
+    response = [
+        {
+            "rid": row.rid,
+            "rtype": row.rtype,
+            "title": row.title,
+            "author":row.author,
+            "description": row.description,
         }
         for row in rows
     ]
