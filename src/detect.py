@@ -35,12 +35,14 @@ detect_process_pool = concurrent.futures.ProcessPoolExecutor(max_workers=2)
 
 # each ingredient's confidence threshold
 confidence_filter = {
-    "mushroom": 0.8,
-    "beef":0.3,
-    "chicken":0.3,
-    "pork":0.3,
-    "noodle":0.75,
-    "common" :0.35 # the ingridient which is not in the filter
+    "mushroom": 0.85,
+    "okra":0.75,
+    "heim":0.85,
+    "beef":0.4,
+    "chicken":0.4,
+    "pork":0.4,
+    "noodle":0.85,
+    "common" :0.65 # the ingridient which is not in the filter
 }
 
 def result_processing(img,results): # results:[{"key":[(x1,x2,y1,y2)]}]
@@ -66,23 +68,23 @@ def image_processing(image,model_path):
     results = get_sliced_prediction(image, model, slice_height=500, slice_width=500, overlap_height_ratio=0.2, overlap_width_ratio=0.2)
     result = {}
 
-    print("%-5s %-20s %-15s %s %s" % ("index", "name", "confidence", "status","threadhold"))
+    print("%-5s %-20s %-15s %s %s" % ("index", "name", "confidence", "status","threshold"))
 
     for idx, det in enumerate(results.object_prediction_list):
 
-        show_log = lambda status,threadhold:print("%-5d %-20s %.13f %-6s %s" % (idx, det.category.name, det.score.value, status, threadhold))    
+        show_log = lambda status, th:print("%-5d %-20s %.13f %-6s %s" % (idx, det.category.name, det.score.value, status, th))
         
 
         if det.category.name not in confidence_filter:
-            threadhold = confidence_filter['common']
+            threshold = confidence_filter['common']
         else:
-            threadhold = confidence_filter[det.category.name]
+            threshold = confidence_filter[det.category.name]
 
-        if det.score.value < threadhold:
-            show_log("ignore", threadhold)
+        if det.score.value < threshold:
+            show_log("ignore", threshold)
             continue
 
-        show_log("keep", threadhold)
+        show_log("keep", threshold)
 
         if det.category.name not in result:
             result[det.category.name] = []
