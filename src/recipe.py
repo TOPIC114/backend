@@ -1,9 +1,9 @@
 import os
-from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.params import Query
 
+import sql_app.model.User
 from sql_app.db import AsyncDBSession
 from sqlalchemy import select, delete, and_, func, text
 
@@ -224,37 +224,86 @@ async def search_by_keyword(keyword:str, offset:int, db: AsyncDBSession) -> List
 
     return response
 
+recipe_search = text(
+    """
+    select
+        r.name as title,
+        description,
+        video_link as video,
+        rt.name as rtype,
+        username as author
+    FROM recipe r
+    INNER JOIN backend.recipe_type rt 
+        on r.rtype = rt.id
+    INNER JOIN backend.author a 
+        on r.id = a.rid
+    INNER JOIN backend.user u 
+        on a.uid = u.id
+    where r.id=:rid
+    """
+)
+
+comment_search_stmt = text(
+    """
+    select 
+        comment.comment as content,
+        username,
+        rate as score
+    FROM comment
+    INNER JOIN backend.user u on comment.id = u.id
+    WHERE comment.recipe_id = :rid
+    """
+)
+
+iids_stmt = text(
+    """
+    select iid
+    From made
+    WHERE rid=:rid
+    """
+)
+
 @recipe_root.get("/content/{rid}", status_code=200)
-async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)) -> RecipeInfoResponse:
-    stmt1 = select(Recipe).where(Recipe.id == rid).limit(1)
-    result = await db.execute(stmt1)
-    recipe = result.scalars().first()
+async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)):
+    connect = await db.execute(recipe_search,{"rid":rid})
+    recipe = connect.fetchone()
+    print(recipe.title)
 
-    recipe_id = recipe.id
-    name = recipe.name
-    description = recipe.description
-    video_link = recipe.video_link
-    rtype = recipe.rtype
 
-    if not recipe:
-        raise HTTPException(status_code=404)
+    ouo = await db.execute(comment_search_stmt,{"rid":rid})
+    result = ouo.fetchall()
 
-    stmt2 = (select(Recipe).join_from(search, Recipe)
-             .where(and_(search.c.uid == user.id, search.c.rid == rid)))
-    result = await db.execute(stmt2)
-    history = result.scalars().first()
+    comments = [
+        {
+            "username": i.username,
+            "content": i.content,
+            "score": i.score
+        }
+        for i in result
+    ]
 
-    if history:
-        new = (search.update().where(and_(search.c.uid == user.id, search.c.rid == rid))
-               .values(search_date=datetime.now()))
+    if len(comments):
+        avg = sum([x["score"] for x in comments]) / len(comments)
     else:
-        new = search.insert().values(uid=user.id, rid=rid, search_date=datetime.now())
+        avg = None
 
-    await db.execute(new)
-    await db.commit()
+    connect = await db.execute(iids_stmt,{"rid":rid})
+    result = connect.fetchall()
 
-    return {"id": recipe_id, "name": name, "description": description, "video_link": video_link, "rtype": rtype}
+    iids = [i.iid for i in result]
 
+    obj = RecipeInfoResponse(
+        title=recipe.title,
+        description=recipe.description,
+        video=recipe.video,
+        score=avg,
+        rtype=recipe.rtype,
+        author=recipe.author,
+        comments=comments,
+        iids=iids,
+    )
+
+    return obj
 
 @recipe_root.delete("/delete/{rid}", status_code=200)
 async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
@@ -293,7 +342,7 @@ insert_comment = text(
     """
 )
 
-@recipe_root.post("/comment/{rid}", status_code=200)
+@recipe_root.post("/comment", status_code=200)
 async def post_comment(post:CommentCreate, db:AsyncDBSession, user = Depends(token_verify)):
     if user.level < 128:
         raise HTTPException(status_code=404)
@@ -316,3 +365,4 @@ search_recipe_avg = text(
     GROUP BY comment.recipe_id
     """
 )
+
