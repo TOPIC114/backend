@@ -264,7 +264,7 @@ iids_stmt = text(
 )
 
 @recipe_root.get("/content/{rid}", status_code=200)
-async def read_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)):
+async def read_recipe(rid: int, db: AsyncDBSession):
     connect = await db.execute(recipe_search,{"rid":rid})
     recipe = connect.fetchone()
     print(recipe.title)
