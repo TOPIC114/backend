@@ -103,10 +103,9 @@ search_by_iids_stmt = text(
     """
     select
         made.rid as rid,
-        u.username as author,
-        rt.name as rtype,
         r.name as title,
-        SUBSTRING(description,1,300) as description
+        video_link as link,
+        score.s as score
     FROM backend.made
     INNER JOIN backend.recipe r
         on made.rid = r.id
@@ -116,6 +115,12 @@ search_by_iids_stmt = text(
         on a.uid = u.id
     INNER JOIN backend.recipe_type rt
         on r.rtype = rt.id
+    LEFT OUTER JOIN (
+        SELECT AVG(comment.rate) as s,comment.recipe_id
+        FROM comment
+        GROUP BY comment.recipe_id
+    ) as score
+    ON score.recipe_id = r.id
     WHERE
         iid IN (17,73,30,15)
     GROUP BY rid
@@ -130,13 +135,13 @@ search_by_iids_stmt = text(
     """
 )
 
-search_by_keyword="""
+search_by_keyword = text(
+    """
     select
         r.id as rid,
         r.name as title,
-        username as author,
-        rt.name as rt,
-        SUBSTRING(r.description,1,300) as description
+        r.video_link as link,
+        score.s as score
     FROM backend.recipe r
     INNER JOIN backend.author a
         ON r.id = a.rid
@@ -150,6 +155,12 @@ search_by_keyword="""
         GROUP BY rid
     ) as ic
     ON ic.rid = r.id
+    LEFT OUTER JOIN (
+        SELECT AVG(comment.rate) as s,comment.recipe_id
+        FROM comment
+        GROUP BY comment.recipe_id
+    ) as score
+    ON score.recipe_id = r.id
     WHERE
         r.name LIKE CONCAT('%',:keyword,'%') OR
         r.description LIKE CONCAT('%',:keyword,'%') OR
@@ -169,14 +180,15 @@ search_by_keyword="""
         ic.count
         ,
         CASE
-            WHEN author = :keyword THEN 1
-            WHEN author LIKE CONCAT('%',:keyword,'%') THEN 2
+            WHEN username = :keyword THEN 1
+            WHEN username LIKE CONCAT('%',:keyword,'%') THEN 2
             ELSE 3
         END,
         r.id
     LIMIT 100
     OFFSET :offset
-"""
+    """
+)
 
 @recipe_root.get("/search/iid")
 async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(None)) -> List[RecipeSearchResponse]:
@@ -187,10 +199,9 @@ async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(N
     response = [
         {
             "rid": row.rid,
-            "rtype": row.rtype,
             "title": row.title,
-            "author":row.author,
-            "description": row.description,
+            "link": row.link,
+            "score":row.score,
         }
         for row in rows
     ]
@@ -199,15 +210,14 @@ async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(N
 
 @recipe_root.get("/search/keyword")
 async def search_by_keyword(keyword:str, offset:int, db: AsyncDBSession) -> List[RecipeSearchResponse]:
-    result = await db.execute(search_by_keyword,{"keyword":keyword,"offset":offset*100})
+    result = await db.execute(search_by_iids_stmt,{"keyword":f"\"{keyword}\"","offset":offset*100})
     rows = result.fetchall()
     response = [
         {
             "rid": row.rid,
-            "rtype": row.rtype,
             "title": row.title,
-            "author":row.author,
-            "description": row.description,
+            "link": row.link,
+            "score": row.score,
         }
         for row in rows
     ]
@@ -275,3 +285,34 @@ async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token
         raise HTTPException(status_code=404)
 
     return {'message': 'deleted recipe'}
+
+insert_comment = text(
+    """
+    INSERT INTO backend.comment (id, recipe_id, comment, rate) VALUE (:uid, :rid, :comment, :rate)
+    ON DUPLICATE KEY UPDATE comment=VALUES(comment),rate=VALUES(rate)
+    """
+)
+
+@recipe_root.post("/comment/{rid}", status_code=200)
+async def post_comment(post:CommentCreate, db:AsyncDBSession, user = Depends(token_verify)):
+    if user.level < 128:
+        raise HTTPException(status_code=404)
+
+    if not ( 0 <= post.rate <= 5):
+        raise HTTPException(status_code=400, detail="rate must be between 0 and 5")
+
+    try:
+        await db.execute(insert_comment,{"uid":user.id,"rid":post.rid,"comment":post.content,"rate":post.rate})
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+    return {"message": "comment posted"}
+
+search_recipe_avg = text(
+    """
+    SELECT AVG(rate) FROM backend.comment
+    GROUP BY comment.recipe_id
+    """
+)

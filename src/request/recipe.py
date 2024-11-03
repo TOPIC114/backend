@@ -17,3 +17,8 @@ class RecipeContent(RecipeUpload):
 
 class RecipeTypeRequest(BaseModel):
     name: str
+
+class CommentCreate(BaseModel):
+    rid: int
+    content:str
+    rate:int
