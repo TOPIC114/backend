@@ -42,6 +42,7 @@ confidence_filter = {
     "chicken":0.4,
     "pork":0.4,
     "noodle":0.85,
+    "carrot":0.5,
     "common" :0.65 # the ingridient which is not in the filter
 }
 
