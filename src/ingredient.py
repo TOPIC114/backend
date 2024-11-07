@@ -1,9 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update, insert
 
-from request.ingredient import ChangeNameRequest, AddSubIngredient
+from request.ingredient import ChangeNameRequest, AddSubIngredient, IngredientCreate
 from sql_app.db import AsyncDBSession
 from sql_app.model.Recipe import Ingredient, SubIngredient
+from sql_app.model.User import User
+from user import token_verify
 
 i_router = APIRouter(prefix="/ingredient", tags=['ingredient'])
 
@@ -39,3 +41,19 @@ async def add_sub(db: AsyncDBSession, data: AddSubIngredient):
         raise e
 
     return {'message': 'upload success'}
+
+
+@i_router.post("/create")
+async def create_recipe(info: IngredientCreate, db: AsyncDBSession, user: User = Depends(token_verify)):
+    if user.level < 128:
+        raise HTTPException(status_code=404)
+    stmt = Ingredient(name=info.name, mandarin=info.mandarin)
+    try:
+        db.add(stmt)
+        await db.commit()
+        await db.refresh(stmt)
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+    return{'message': 'upload success'}

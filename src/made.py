@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, update, and_
+from sqlalchemy import select, update, and_, text
 
 from request.made import MadeUpload, MadeUploadList
 from sql_app.db import AsyncDBSession
@@ -9,6 +9,26 @@ from user import token_verify
 
 m_router = APIRouter(prefix="/made", tags=['made'])
 
+update_weight = text(
+    """
+    UPDATE backend.made
+    INNER JOIN (
+        SELECT
+            rid,
+            iid,
+            COUNT(iid) AS weight
+        FROM backend.recipe
+        INNER JOIN backend.made
+            ON recipe.id = made.rid
+        GROUP BY rtype,iid
+    ) AS b
+    ON backend.made.rid = b.rid and backend.made.iid=b.iid
+    SET
+        backend.made.weight = b.weight
+    where
+        backend.made.weight<>b.weight;
+    """
+)
 
 @m_router.post('/create')
 async def by_id(db: AsyncDBSession, request: MadeUpload, user: User = Depends(token_verify)):
@@ -20,45 +40,11 @@ async def by_id(db: AsyncDBSession, request: MadeUpload, user: User = Depends(to
     try:
         await db.execute(mades)
         await db.commit()
+        await db.execute(update_weight)
+        await db.commit()
     except Exception as e:
         await db.rollback()
         raise e
-
-    stmt = select(Recipe).where(Recipe.id == request.rid).limit(1)
-    result = await db.execute(stmt)
-    recipe = result.scalars().first()
-
-    stmt = select(Recipe).where(Recipe.name == recipe.name)
-    result = await db.execute(stmt)
-    recipes = result.scalars().all()
-
-    count = 0.0
-
-    iids = []
-
-    for i in recipes:
-        result = await db.execute(i.made)
-        ingridents = result.scalars().all()
-        for j in ingridents:
-            if j.id == request.iid:
-                count = count+1
-                iids.append(i.id)
-
-    for i in iids:
-        stmt = update(made).where(and_(made.c.rid == i, made.c.iid == request.iid)).values(weight=count)
-        try:
-            await db.execute(stmt)
-            await db.commit()
-        except Exception as _: # ignore
-            await db.rollback()
-
-    # stmt = select(made.c.weight).where(made.c.rid==1)
-    #
-    # print(stmt)
-    #
-    # result = await db.execute(stmt)
-    # r = result.scalars().first()
-    # print(r)
 
     return {'message': 'upload success'}
 
@@ -77,31 +63,10 @@ async def by_id(db: AsyncDBSession, request: MadeUploadList, user: User = Depend
             await db.rollback()
             raise e
 
-        stmt = select(Recipe).where(Recipe.id == request.rid).limit(1)
-        result = await db.execute(stmt)
-        recipe = result.scalars().first()
-
-        stmt = select(Recipe).where(Recipe.name == recipe.name)
-        result = await db.execute(stmt)
-        recipes = result.scalars().all()
-
-        count = 0.0
-
-        iids = []
-
-        for i in recipes:
-            result = await db.execute(i.made)
-            ingridents = result.scalars().all()
-            for j in ingridents:
-                if j.id == iid:
-                    count = count+1
-                    iids.append(i.id)
-
-        for i in iids:
-            stmt = update(made).where(and_(made.c.rid == i, made.c.iid == iid)).values(weight=count)
-            try:
-                await db.execute(stmt)
-                await db.commit()
-            except Exception as _: # ignore
-                await db.rollback()
+    try:
+        await db.execute(update_weight)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
     return {'message': 'upload success'}

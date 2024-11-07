@@ -14,3 +14,11 @@ class RecipeSearch(BaseModel):
 
 class RecipeContent(RecipeUpload):
     author: str
+
+class RecipeTypeRequest(BaseModel):
+    name: str
+
+class CommentCreate(BaseModel):
+    rid: int
+    content:str
+    rate:int
