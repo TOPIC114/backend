@@ -122,7 +122,7 @@ search_by_iids_stmt = text(
     ) as score
     ON score.recipe_id = r.id
     WHERE
-        iid IN (17,73,30,15)
+        iid IN :iids
     GROUP BY rid
     HAVING
         SUM(made.weight) <> 0
@@ -135,7 +135,7 @@ search_by_iids_stmt = text(
     """
 )
 
-search_by_keyword = text(
+search_by_keyword_stmt = text(
     """
     select
         r.id as rid,
@@ -193,7 +193,6 @@ search_by_keyword = text(
 @recipe_root.get("/search/iid")
 async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(None)) -> List[RecipeSearchResponse]:
     result = await db.execute(search_by_iids_stmt,{"iids":iids,"offset":offset*100})
-    rows = result.fetchall()
 
     # Convert results to a list of dictionaries
     response = [
@@ -203,15 +202,15 @@ async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(N
             "link": row.link,
             "score":row.score,
         }
-        for row in rows
+        for row in result
     ]
 
     return response
 
 @recipe_root.get("/search/keyword")
 async def search_by_keyword(keyword:str, offset:int, db: AsyncDBSession) -> List[RecipeSearchResponse]:
-    result = await db.execute(search_by_iids_stmt,{"keyword":f"\"{keyword}\"","offset":offset*100})
-    rows = result.fetchall()
+    result = await db.execute(search_by_keyword_stmt,{"keyword":keyword,"offset":offset*100})
+
     response = [
         {
             "rid": row.rid,
@@ -219,7 +218,7 @@ async def search_by_keyword(keyword:str, offset:int, db: AsyncDBSession) -> List
             "link": row.link,
             "score": row.score,
         }
-        for row in rows
+        for row in result
     ]
 
     return response
