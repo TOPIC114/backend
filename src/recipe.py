@@ -3,9 +3,8 @@ import os
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.params import Query
 
-import sql_app.model.User
 from sql_app.db import AsyncDBSession
-from sqlalchemy import select, delete, and_, func, text
+from sqlalchemy import select, delete, func, text
 
 from request.recipe import *
 from sql_app.model.Recipe import *
@@ -39,7 +38,7 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
         raise e
 
     webhook = DiscordWebhook(url=recipe_webhook, content=f"# {rid}.{info.name}\n{info.description}")
-    response = webhook.execute()
+    _ = webhook.execute()
 
     return {"rid": rid}
 
@@ -49,7 +48,7 @@ async def create_recipe_type(info: RecipeTypeRequest, db: AsyncDBSession, user: 
         raise HTTPException(status_code=401)
     
     webhook = DiscordWebhook(url=type_webhook, content=info.name)
-    response = webhook.execute()
+    _ = webhook.execute()
 
     new_type = RecipeType(name=info.name)
     try:
@@ -76,8 +75,8 @@ async def create_recipe_type( db: AsyncDBSession):
 async def recipe_list(offset: int, db: AsyncDBSession):
     stmt = select(Recipe).offset(offset * 100).limit(100)
     result = await db.execute(stmt)
-    list = result.scalars().all()
-    return list
+    result_list = result.scalars().all()
+    return result_list
 
 
 @recipe_root.get("/count")

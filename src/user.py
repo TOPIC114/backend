@@ -27,7 +27,7 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession) -> Success
         db.add(user)
         await db.commit()
         await db.refresh(user)
-    except IntegrityError as e:
+    except IntegrityError as _:
         raise HTTPException(status_code=409, detail='Username or email already exists')
     except Exception as e:
         await db.rollback()

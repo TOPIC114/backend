@@ -128,7 +128,7 @@ async def detect_image(version: str, db: AsyncDBSession, image: UploadFile = Fil
 
     result = await run_in_threadpool(model, img_np, 0.5)
 
-    dict = {}
+    temp = {}
 
     print(model.names)
 
@@ -140,8 +140,8 @@ async def detect_image(version: str, db: AsyncDBSession, image: UploadFile = Fil
             conf = j.conf[0]
 
             if conf > 0.5:
-                if name not in dict:
-                    dict[name] = []
+                if name not in temp:
+                    temp[name] = []
                 x1, y1, x2, y2 = j.xyxy[0]
                 img_copy = img.copy()
                 img_draw = ImageDraw.Draw(img_copy)
@@ -150,9 +150,9 @@ async def detect_image(version: str, db: AsyncDBSession, image: UploadFile = Fil
                 random_name = uuid.uuid4().hex
                 img_copy.save(f"img/{random_name}.jpg")
 
-                dict[name].append(f"img/{random_name}.jpg")
+                temp[name].append(f"img/{random_name}.jpg")
 
-    return list(dict.keys())
+    return list(temp.keys())
 
 
 @detection_router.post("/upload/pt")
@@ -163,7 +163,6 @@ async def upload_pt(db: AsyncDBSession, description: str, version: str,
         raise HTTPException(status_code=401, detail='You are not administrator')
 
     filepath = pt.filename
-    extension = ""
 
     if filepath.endswith('.pt'):
         extension = 'pt'
