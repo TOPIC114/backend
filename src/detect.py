@@ -399,13 +399,17 @@ BASE_URL = "https://generativelanguage.googleapis.com"
 genai.configure(api_key=GOOGLE_API_KEY)
 
 chat_session = None
+list_of_i = []
 lock = asyncio.Lock()
 
 
 # If ingredients change, server will need to restart to update the chat session
 async def get_chat_session(ingredients):
     async with lock:
-        global chat_session
+        global chat_session,list_of_i
+        if list_of_i != ingredients:
+            chat_session = None # reset chat session
+            list_of_i = ingredients
         if chat_session is None:
             await run_in_threadpool(init_session, ingredients)
         return copy.deepcopy(chat_session)
@@ -536,7 +540,12 @@ def detect_files(session,file,ingredients_sets):
 
 # TODO: depends on get_chat_session with auto fetching ingredients list
 @detection_router.post("/gemini")
-async def detect_by_gemini(files:List[UploadFile] = File(...)):
+async def detect_by_gemini(files:List[UploadFile] = File(...)) -> List[str]:
+    """
+    Detect the ingredients in the image by using the gemini API
+
+    :param files: List of images
+    """
     ingredients = ['asparagus', 'avocado', 'bamboo_shoots', 'beans_green', 'beetroot', 'cassava', 'chayote', 'cinnamon',
                    'coriander', 'corn', 'egg', 'bean_mung', 'cabbage_napa', 'carrot', 'chicken', 'crab', 'garlic',
                    'mint', 'pepper_bell', 'potato', 'chili', 'eggplant', 'gourd_bitter', 'gourd_bottle',
@@ -577,12 +586,3 @@ async def detect_by_gemini(files:List[UploadFile] = File(...)):
 
     response = await run_in_threadpool(detect_files,session,upload_files,set(ingredients))
     return response
-
-
-# TODO: make it admin only.
-@detection_router.post("/gemini/reset")
-async def reset_chat_session():
-    global chat_session
-    async with lock:
-        chat_session = None
-    return {'message': 'Reset success'}
