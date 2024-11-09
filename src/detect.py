@@ -393,7 +393,6 @@ async def detect_video(version: str, db: AsyncDBSession, video: UploadFile = Fil
 
 # GOOGLE API KEY
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-print(f"GOOGLE_API_KEY: {GOOGLE_API_KEY}")
 BASE_URL = "https://generativelanguage.googleapis.com"
 
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -448,7 +447,7 @@ def init_session(ingredients):
             "role": "user",
             "parts": [
                 "Detect these shape of food which is on the list " + str(
-                    ingredients) + "on these images down below, ,than map the detected ingredients to the name i provided as an array with field name \"result\". "
+                    ingredients) + " on these images down below, ,than map the detected ingredients to the name i provided as an array with field name \"result\". "
             ],
         },
     ]
