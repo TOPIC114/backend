@@ -393,6 +393,7 @@ async def detect_video(version: str, db: AsyncDBSession, video: UploadFile = Fil
 
 # GOOGLE API KEY
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+print(f"GOOGLE_API_KEY: {GOOGLE_API_KEY}")
 BASE_URL = "https://generativelanguage.googleapis.com"
 
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -454,7 +455,7 @@ def init_session(ingredients):
 
 
 # This function only supports .jpg or .png files,
-# and if the file is not a .jpg or .png file, it will return None
+# and if the file is not a .jpg or .png file, it will
 # Why rein
 # TODO: make it async call
 def upload2gemini(path):
@@ -464,7 +465,7 @@ def upload2gemini(path):
             if img.format not in ['JPEG', 'PNG']:
                 raise HTTPException(status_code=415, detail='This endpoint only support jpg or png file')
     except PIL.UnidentifiedImageError:
-        return None
+        raise HTTPException(status_code=415, detail='This endpoint is not the type that can be identified by Pillow')
 
     size_of_file = os.path.getsize(path)
 
@@ -491,7 +492,7 @@ def upload2gemini(path):
     )
 
     if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail="Error when upload image to gemini server. details: " + response.text)
+        raise HTTPException(status_code=response.status_code, detail="Error when upload image to gemini server. details: " + str(response.json()))
 
     upload_url = response.headers["x-goog-upload-url"]
 
