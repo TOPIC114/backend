@@ -392,8 +392,7 @@ async def detect_video(version: str, db: AsyncDBSession, video: UploadFile = Fil
 # The code to implement the
 
 # GOOGLE API KEY
-# GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GOOGLE_API_KEY = "AIzaSyAxOCHULsHUHe7W7b1HXP_NGmq2KT_hozc"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 BASE_URL = "https://generativelanguage.googleapis.com"
 
 genai.configure(api_key=GOOGLE_API_KEY)
