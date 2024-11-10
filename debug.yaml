@@ -3,11 +3,11 @@ disable_existing_loggers: False
 formatters:
   default:
     # "()": uvicorn.logging.DefaultFormatter
-    format: '%(asctime)s | %(levelname)-5s | %(name)-36s | %(message)s'
+    format: '%(asctime)s | %(levelname)-7s | %(name)-36s | %(message)s'
     use_colors: True
   access:
     # "()": uvicorn.logging.AccessFormatter
-    format: '%(asctime)s | HTTP  | %(name)-36s | %(message)s'
+    format: '%(asctime)s | HTTP    | %(name)-36s | %(message)s'
     use_colors: True
 handlers:
   default:
