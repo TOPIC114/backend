@@ -28,7 +28,8 @@ because the endpoint is not implemented in the backend yet.
 the token in the header with the key name `X-API-Key`.
 
 5. The endpoint that is described as "Admin Only" means that the endpoint requires the user to have the admin permission 
-level to access. The admin permission level is 128.
+level to access, so you should also put the token in the header with the key name 'X-API-Key'. The admin permission 
+level is 128.
 
 6. The endpoint that is described as "Stuffs" means that the endpoint is not implemented yet or only can be accessed by 
 admin, but it will be implemented in the future.

@@ -107,6 +107,11 @@ async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)
     401: {"description": "Unauthorized - Invalid token"}
 })
 async def get_user_info(user: User = Depends(token_verify)) -> UserInfoResponse:
+    """
+    # Get the user info about me (**Token required**)
+    ** This endpoint will be refactored in the future, so you should not implement this endpoint **
+
+    """
     return {'id': user.id, 'username': user.username, 'email': user.email, 'level': user.level}
 
 
@@ -114,6 +119,14 @@ async def get_user_info(user: User = Depends(token_verify)) -> UserInfoResponse:
     401: {"description": "Unauthorized - Invalid token"}
 })
 async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token_verify)):
+    """
+    # Get user search history (**Token required**)
+    return the list of recipes that the user has visited before (up to 100 record)
+
+    Currently, the endpoint will not return anything, since the search history is not implemented in the /recipe/content/{id}
+    endpoint yet.
+
+    """
     stmt = select(Recipe).join_from(search, Recipe).where(search.c.uid == user.id)
     result = await db.execute(stmt)
     recipe_list = result.scalars().all()
@@ -161,3 +174,12 @@ async def logout(db: AsyncDBSession, user: User = Depends(token_verify)) -> Succ
     await db.execute(stmt2)
     await db.commit()
     return {'message': 'Logout success'}
+
+@user_root.get('/recommand', status_code=200, responses={
+    401: {"description": "Unauthorized - Invalid token"}
+})
+async def get_user_recommend():
+    """
+    # Get user recommend (**Token required**) (Not implemented yet)
+    """
+    raise HTTPException(status_code=501, detail='Not implemented yet')
