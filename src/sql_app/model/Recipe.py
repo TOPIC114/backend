@@ -38,11 +38,3 @@ class Ingredient(Base):
     mandarin = Column(String(16), nullable=False)
     made = relationship('Recipe', secondary=made, backref='Ingredient', passive_deletes=True, lazy='dynamic')
     sub = relationship('SubIngredient', backref='Ingredient', passive_deletes=True, lazy='dynamic')
-
-
-class SubIngredient(Base):
-    __tablename__ = 'sub_ingredient'
-    id = Column(Integer, primary_key=True, index=True)
-    iid = Column(Integer, ForeignKey('ingredient.id'), nullable=False)
-    name = Column(String(32), nullable=False)
-    mandarin = Column(String(16), nullable=False)
