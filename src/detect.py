@@ -390,6 +390,7 @@ async def get_chat_session(db:AsyncDBSession):
         ingredients = [i.name for i in result]
 
         if list_of_i != ingredients:
+            logger.debug("Ingredients changed or not inited.")
             chat_session = None  # reset chat session
             list_of_i = ingredients
             ingredients_set = set(ingredients)
@@ -400,6 +401,8 @@ async def get_chat_session(db:AsyncDBSession):
 
 def init_session(ingredients):
     global chat_session
+
+    logger.debug("Init chat session with ingredients: %s", ingredients)
 
     generation_config = {
         "temperature": 1,
@@ -431,6 +434,7 @@ def init_session(ingredients):
 # and if the file is not a .jpg or .png file, it will
 async def upload2gemini(path):
     # Using Pillow to check if the file is a .jpg or .png file
+
     try:
         with PIL.Image.open(path) as img:
             if img.format not in ['JPEG', 'PNG']:
@@ -456,8 +460,9 @@ async def upload2gemini(path):
     # response = requests.post(f'{BASE_URL}/upload/v1beta/files', params=params, headers=headers, data=data)
     async with aiohttp.ClientSession() as session:
         async with session.post(f'{BASE_URL}/upload/v1beta/files', params=params, headers=headers, data=data) as response:
+            logger.debug("Init the session to upload image to gemini server response: %s", response.status)
             if response.status != 200:
-                raise HTTPException(status_code=response.status_code,
+                raise HTTPException(status_code=response.status,
                                     detail="Error when upload image to gemini server. details: " + str(await response.json()))
 
         upload_url = response.headers["x-goog-upload-url"]
@@ -473,8 +478,9 @@ async def upload2gemini(path):
 
         # res = requests.post(f'{upload_url}', headers=headers, data=data).json()['file']
         async with session.post(f'{upload_url}', headers=headers, data=data) as response:
+            logger.debug("Upload image to gemini server with response: %s", response.status)
             if response.status != 200:
-                raise HTTPException(status_code=response.status_code,
+                raise HTTPException(status_code=response.status,
                                     detail="Error when upload image to gemini server. details: " + str(await response.json()))
             res = (await response.json())['file']
 
@@ -519,18 +525,23 @@ async def detect_by_gemini(background:BackgroundTasks,session = Depends(get_chat
     :param files: List of images
     """
 
+    logger.info("Detect the ingredients in the image by using the gemini API")
+
     upload_coroutine = []
 
     for file in files:
         random_name = uuid.uuid4().hex
+        logger.debug("Saving the file with random name: img/%s......", random_name)
         async with aiofiles.open(f"./img/{random_name}", 'wb') as output_file:
             await output_file.write(await file.read())
+            logger.debug("Save the file with random name: img/%s", random_name)
         upload_coroutine.append(upload2gemini(f"./img/{random_name}"))
 
     upload_files = await asyncio.gather(*upload_coroutine)
 
     response = await run_in_threadpool(detect_files, session, upload_files)
     for i in upload_files:
+        logger.debug("Delete the file(%s) in gemini server in background.....", i.name)
         background.add_task(run_in_threadpool,i.delete)
 
     return response
