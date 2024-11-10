@@ -178,7 +178,8 @@ async def detect_by_gemini(background:BackgroundTasks,session = Depends(get_chat
     """
     Detect the ingredients in the image by using the gemini API
 
-    :param files: List of images
+    ### Request Body
+    - `files`: List of image files that need to be detected. **note: only support .jpg or .png files**
     """
 
     logger.info("Detect the ingredients in the image by using the gemini API")
