@@ -1,7 +1,6 @@
-import logging
 import os
 
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
 
 from detect import detection_router
@@ -11,11 +10,9 @@ from user import user_root
 from recipe import recipe_root
 from video import video_root
 
-logging.basicConfig(level=logging.DEBUG)
-app = FastAPI()
-router = APIRouter()
 
-app.include_router(router)
+app = FastAPI()
+
 app.include_router(user_root)
 app.include_router(recipe_root)
 app.include_router(detection_router)
