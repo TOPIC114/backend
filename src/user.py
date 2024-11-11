@@ -33,7 +33,8 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession) -> Success
     - `email`: string, the email of the account
 
     ### Response Body
-    - `message`: string, the message of the response, telling the user the register is success. You can ignore this message.
+    - `message`: string, the message of the response, telling the user the register is success. You can ignore this
+    message.
 
     """
     user = User(username=info.username, password=info.password, email=info.email, level=1)
@@ -46,14 +47,13 @@ async def register_account(info: RegisterRequest, db: AsyncDBSession) -> Success
     except Exception as e:
         await db.rollback()
         raise e
-    return {'message': 'Register success'}
+    return SuccessResponse(message='Register success')
 
 
 @user_root.post('/login', status_code=200, responses={
     401: {"description": "Unauthorized - Wrong username/email or password"}
 })
 async def login(info: LoginRequest, db: AsyncDBSession):
-
     """
     # Login to an account
     the endpoint will return a token for the user to use in the future requests,
@@ -103,6 +103,7 @@ async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)
         raise HTTPException(status_code=401, detail='Invalid token')
     return user
 
+
 @user_root.get('/me', status_code=200, responses={
     401: {"description": "Unauthorized - Invalid token"}
 })
@@ -112,7 +113,7 @@ async def get_user_info(user: User = Depends(token_verify)) -> UserInfoResponse:
     ** This endpoint will be refactored in the future, so you should not implement this endpoint **
 
     """
-    return {'id': user.id, 'username': user.username, 'email': user.email, 'level': user.level}
+    return UserInfoResponse(username=user.username, email=user.email, level=user.level)
 
 
 @user_root.get('/searches', status_code=200, responses={
@@ -129,7 +130,15 @@ async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token
     """
     stmt = select(Recipe).join_from(search, Recipe).where(search.c.uid == user.id)
     result = await db.execute(stmt)
-    recipe_list = result.scalars().all()
+    recipe_list = [
+        {
+            'id': recipe.id,
+            'name': recipe.name,
+            'description': recipe.description,
+            'image': recipe.image
+        }
+        for recipe in result
+    ]
     return recipe_list
 
 
@@ -137,7 +146,6 @@ async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token
     401: {"description": "Unauthorized - Invalid token"}
 })
 async def logout(db: AsyncDBSession, token: str = Security(api_key_header)) -> SuccessResponse:
-
     """
     # Logout the account (**Token required**)
     
@@ -155,7 +163,7 @@ async def logout(db: AsyncDBSession, token: str = Security(api_key_header)) -> S
     stmt2 = delete(Session).where(Session.session == token)
     await db.execute(stmt2)
     await db.commit()
-    return {'message': 'Logout success'}
+    return SuccessResponse(message='Logout success')
 
 
 @user_root.get('/logout/all', status_code=200, responses={
@@ -173,7 +181,8 @@ async def logout(db: AsyncDBSession, user: User = Depends(token_verify)) -> Succ
     stmt2 = delete(Session).where(Session.uid == user.id)
     await db.execute(stmt2)
     await db.commit()
-    return {'message': 'Logout success'}
+    return SuccessResponse(message='Logout all success')
+
 
 @user_root.get('/recommand', status_code=200, responses={
     401: {"description": "Unauthorized - Invalid token"}
