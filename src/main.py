@@ -34,10 +34,13 @@ level is 128.
 6. The endpoint that is described as "Stuffs" means that the endpoint is not implemented yet or only can be accessed by 
 admin, but it will be implemented in the future.
 
+7. The endpoint under /video is only for inner use, so you should not implement the endpoint under /video.
+
 ## Note
 FastAPI is using the OpenAPI standard, so you can use this Swagger UI to interact with the API.
 
 You can also generate the client code from the OpenAPI standard, so you can use the client code to interact with the API.
+
 
 ### That's all the guidelines for now. If you have any questions, please ask in line/discord.
 

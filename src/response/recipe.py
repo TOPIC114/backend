@@ -16,6 +16,26 @@ class RecipeInfoResponse(BaseModel):
     comments :List[CommentResponse]
     iids :List[int]
 
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "title": "A fire rice recipe",
+                "description": "nothing here",
+                "video": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+                "rtype": "fire rice",
+                "score": 4.0,
+                "comments": [
+                    {
+                        "username": "bloodnighttw",
+                        "content": "I love this recipe!",
+                        "score": 5
+                    }
+                ],
+                "iids": [1, 2, 3]
+            }
+        }
+    }
+
 
 class RecipeSearchResponse(BaseModel):
     rid :int # recipe id

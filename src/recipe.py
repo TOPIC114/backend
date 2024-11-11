@@ -14,13 +14,17 @@ from response.utils import SuccessResponse
 from user import token_verify
 from discord_webhook import DiscordWebhook
 
-
 recipe_root = APIRouter(prefix="/recipes", tags=['recipe'])
 type_webhook = os.getenv("type_webhook")
 recipe_webhook = os.getenv("recipe_webhook")
 
+
 @recipe_root.post("/create")
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)):
+    """
+    # Create a new recipe (Admin)
+    we will convert this to a stuff endpoint in the future
+    """
     if user.level < 128:
         raise HTTPException(status_code=404)
     new_recipe = Recipe(name=info.name, description=info.description,
@@ -42,11 +46,19 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
 
     return {"rid": rid}
 
+
 @recipe_root.post("/type/create")
-async def create_recipe_type(info: RecipeTypeRequest, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
+async def create_recipe_type(info: RecipeTypeRequest, db: AsyncDBSession,
+                             user: User = Depends(token_verify)) -> SuccessResponse:
+    """
+    # Create a new recipe type (Admin Only, don't implement in frontend)
+    we may convert this to a stuff endpoint in the future
+
+    """
+
     if user.level < 128:
         raise HTTPException(status_code=401)
-    
+
     webhook = DiscordWebhook(url=type_webhook, content=info.name)
     _ = webhook.execute()
 
@@ -64,15 +76,36 @@ async def create_recipe_type(info: RecipeTypeRequest, db: AsyncDBSession, user: 
 
 
 @recipe_root.get("/type/list")
-async def create_recipe_type( db: AsyncDBSession):
+async def create_recipe_type(db: AsyncDBSession):
+    """
+    # List all recipe types
+
+    ## Response Body
+    - List of recipe types, each recipe type has the following fields:
+
+        - `id`: int, the id of the recipe type
+
+        - `name`: string, the name of the recipe type
+
+    """
+
     stmt = select(RecipeType)
     result = await db.execute(stmt)
     types = result.scalars().all()
 
     return types
 
+
 @recipe_root.get("/list/{offset}")
 async def recipe_list(offset: int, db: AsyncDBSession):
+    """
+    This endpoint is used to list all recipes in the database, you can use this endpoint to get the list of recipes and
+    then use the read_recipe endpoint to get the content of the recipe.
+
+    We will refactor this endpoint in the future.
+
+    """
+
     stmt = select(Recipe).offset(offset * 100).limit(100)
     result = await db.execute(stmt)
     result_list = result.scalars().all()
@@ -81,14 +114,29 @@ async def recipe_list(offset: int, db: AsyncDBSession):
 
 @recipe_root.get("/count")
 async def recipe_count(db: AsyncDBSession):
+    """
+    # Count the number of recipes in the database
+
+    ## Response Body
+    - `count`: int, the number of recipes in the database
+    """
+
     stmt = select(func.count()).select_from(select(Recipe.id))
     result = await db.execute(stmt)
     count = result.scalars().first()
 
     return {"count": count}
 
+
 @recipe_root.delete("/type/{tid}")
 async def delete_recipe_type(tid: int, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
+    """
+    # Delete a recipe type by its id (Admin Only, don't implement in frontend)
+
+    ## Response Body
+    - `message`: string, the message of the response, telling the user the recipe type is deleted. You can ignore this
+    """
+
     if user.level < 128:
         raise HTTPException(status_code=401)
 
@@ -96,7 +144,8 @@ async def delete_recipe_type(tid: int, db: AsyncDBSession, user: User = Depends(
     await db.execute(stmt)
     await db.commit()
 
-    return {'message': 'delete success'}
+    return SuccessResponse(message='delete success')
+
 
 search_by_iids_stmt = text(
     """
@@ -189,38 +238,68 @@ search_by_keyword_stmt = text(
     """
 )
 
+
 @recipe_root.get("/search/iid")
-async def search_by_iid(offset:int, db: AsyncDBSession, iids:List[int] = Query(None)) -> List[RecipeSearchResponse]:
-    result = await db.execute(search_by_iids_stmt,{"iids":iids,"offset":offset*100})
+async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query(None)) -> list[RecipeInfoResponse]:
+    """
+    # Search recipes by ingredient ids
+
+    ## Request Query
+
+    - `iids`: List[int], the list of ingredient ids
+
+    - `offset`: int, the offset of the result list, each page contains 100 recipes
+
+    ## Response Body
+    - list of RecipeInfoResponse, see below.
+
+    """
+
+    result = await db.execute(search_by_iids_stmt, {"iids": iids, "offset": offset * 100})
 
     # Convert results to a list of dictionaries
     response = [
-        {
-            "rid": row.rid,
-            "title": row.title,
-            "link": row.link,
-            "score":row.score,
-        }
+        RecipeInfoResponse(
+            rid=row.rid,
+            title=row.title,
+            link=row.link,
+            score=row.score,
+        )
         for row in result
     ]
 
     return response
+
 
 @recipe_root.get("/search/keyword")
-async def search_by_keyword(keyword:str, offset:int, db: AsyncDBSession) -> List[RecipeSearchResponse]:
-    result = await db.execute(search_by_keyword_stmt,{"keyword":keyword,"offset":offset*100})
+async def search_by_keyword(keyword: str, offset: int, db: AsyncDBSession) -> list[RecipeInfoResponse]:
+    """
+    # Search recipes by keyword
+
+    ## Request Query
+
+    - `keyword`: string, the keyword to search
+
+    - `offset`: int, the offset of the result list, each page contains 100 recipes
+
+    ## Response Body
+    - list of RecipeInfoResponse, see below.
+
+    """
+    result = await db.execute(search_by_keyword_stmt, {"keyword": keyword, "offset": offset * 100})
 
     response = [
-        {
-            "rid": row.rid,
-            "title": row.title,
-            "link": row.link,
-            "score": row.score,
-        }
+        RecipeInfoResponse(
+            rid=row.rid,
+            title=row.title,
+            link=row.link,
+            score=row.score,
+        )
         for row in result
     ]
 
     return response
+
 
 recipe_search = text(
     """
@@ -261,14 +340,28 @@ iids_stmt = text(
     """
 )
 
+
 @recipe_root.get("/content/{rid}", status_code=200)
-async def read_recipe(rid: int, db: AsyncDBSession):
-    connect = await db.execute(recipe_search,{"rid":rid})
+async def read_recipe(rid: int, db: AsyncDBSession) -> RecipeInfoResponse:
+    """
+    # Read the content of a recipe by its id
+
+    ## Response Body
+    - `title`: string, the title of the recipe
+    - `description`: string, the description of the recipe
+    - `video`: string, the video link of the recipe
+    - `score`: float, the average score of the recipe
+    - `rtype`: string, the type of the recipe
+    - `author`: string, the author of the recipe
+    - `comments`: List[Comment], the list of comments of the recipe
+    - `iids`: List[int], the list of ingredient ids of the recipe
+
+    """
+    connect = await db.execute(recipe_search, {"rid": rid})
     recipe = connect.fetchone()
     print(recipe.title)
 
-
-    ouo = await db.execute(comment_search_stmt,{"rid":rid})
+    ouo = await db.execute(comment_search_stmt, {"rid": rid})
     result = ouo.fetchall()
 
     comments = [
@@ -285,7 +378,7 @@ async def read_recipe(rid: int, db: AsyncDBSession):
     else:
         avg = None
 
-    connect = await db.execute(iids_stmt,{"rid":rid})
+    connect = await db.execute(iids_stmt, {"rid": rid})
     result = connect.fetchall()
 
     iids = [i.iid for i in result]
@@ -303,8 +396,15 @@ async def read_recipe(rid: int, db: AsyncDBSession):
 
     return obj
 
+
 @recipe_root.delete("/delete/{rid}", status_code=200)
 async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
+    """
+    # Delete a recipe by its id (Admin or author itself only)
+
+    ## Response Body
+    - `message`: string, the message of the response, telling the user the recipe is deleted. You can ignore this
+    """
     if user.level < 128:
         raise HTTPException(status_code=404)
 
@@ -333,6 +433,7 @@ async def delete_recipe(rid: int, db: AsyncDBSession, user: User = Depends(token
 
     return {'message': 'deleted recipe'}
 
+
 insert_comment = text(
     """
     INSERT INTO backend.comment (id, recipe_id, comment, rate) VALUE (:uid, :rid, :comment, :rate)
@@ -340,22 +441,38 @@ insert_comment = text(
     """
 )
 
+
 @recipe_root.post("/comment", status_code=200)
-async def post_comment(post:CommentCreate, db:AsyncDBSession, user = Depends(token_verify)):
+async def post_comment(post: CommentCreate, db: AsyncDBSession, user=Depends(token_verify)) -> SuccessResponse:
+    """
+    # Post a comment to a recipe
+
+    ## Request Body
+    - `rid`: int, the id of the recipe
+
+    - `content`: string, the content of the comment
+
+    - `rate`: int, the rate of the recipe, must be between 0 and 5
+
+    ### Response Body
+    - `message`: string, the message of the response, telling the user the comment is posted. You can ignore this
+
+    """
     if user.level < 128:
         raise HTTPException(status_code=404)
 
-    if not ( 0 <= post.rate <= 5):
+    if not (0 <= post.rate <= 5):
         raise HTTPException(status_code=400, detail="rate must be between 0 and 5")
 
     try:
-        await db.execute(insert_comment,{"uid":user.id,"rid":post.rid,"comment":post.content,"rate":post.rate})
+        await db.execute(insert_comment, {"uid": user.id, "rid": post.rid, "comment": post.content, "rate": post.rate})
         await db.commit()
     except Exception as e:
         await db.rollback()
         raise e
 
-    return {"message": "comment posted"}
+    return SuccessResponse(message='comment success')
+
 
 search_recipe_avg = text(
     """
@@ -363,4 +480,3 @@ search_recipe_avg = text(
     GROUP BY comment.recipe_id
     """
 )
-

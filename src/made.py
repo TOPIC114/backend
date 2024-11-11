@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, update, and_, text
 
 from request.made import MadeUpload, MadeUploadList
+from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
 from sql_app.model.Recipe import made, Recipe
 from sql_app.model.User import User
@@ -31,7 +32,19 @@ update_weight = text(
 )
 
 @m_router.post('/create')
-async def by_id(db: AsyncDBSession, request: MadeUpload, user: User = Depends(token_verify)):
+async def by_id(db: AsyncDBSession, request: MadeUpload, user: User = Depends(token_verify)) -> SuccessResponse:
+    """
+    # Create a new made with iid (Stuff)
+
+    ## Request Body
+    - `rid`: int, the id of the recipe
+
+    - `iid`: int, the id of the ingredient
+
+    ## Response Body
+    - `message`: string, the message of the response, telling the user the register is success. You can ignore this
+
+    """
     if user.level <= 127:
         print(user.level)
         raise HTTPException(status_code=401, detail='You are not administrator')
@@ -46,11 +59,20 @@ async def by_id(db: AsyncDBSession, request: MadeUpload, user: User = Depends(to
         await db.rollback()
         raise e
 
-    return {'message': 'upload success'}
+    return SuccessResponse(message='create success')
 
 
 @m_router.post('/create/list')
-async def by_id(db: AsyncDBSession, request: MadeUploadList, user: User = Depends(token_verify)):
+async def by_id(db: AsyncDBSession, request: MadeUploadList, user: User = Depends(token_verify)) -> SuccessResponse:
+    """
+    # Create a new made with iids (Stuff)
+
+    ## Request Body
+    - `rid`: int, the id of the recipe
+
+    - `iids`: List[int], the list of the id of the ingredients
+
+    """
     if user.level <= 127:
         print(user.level)
         raise HTTPException(status_code=401, detail='You are not administrator')
@@ -69,4 +91,4 @@ async def by_id(db: AsyncDBSession, request: MadeUploadList, user: User = Depend
     except Exception as e:
         await db.rollback()
         raise e
-    return {'message': 'upload success'}
+    return SuccessResponse(message='create success')
