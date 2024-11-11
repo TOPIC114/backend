@@ -251,7 +251,16 @@ async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query
     - `offset`: int, the offset of the result list, each page contains 100 recipes
 
     ## Response Body
-    - list of RecipeInfoResponse, see below.
+    - list of RecipeInfoResponse with the following fields:
+
+        - `rid`: int, the id of the recipe, you will use this to fetch the content of the recipe in the future
+
+        - `title`: string, the title of the recipe
+
+        - `link`: string, the video link of the recipe, format: "https://youtube.com/watch?v={videoid}", if you want
+        to fetch video thumbnail, you can use "https://img.youtube.com/vi/{videoid}/hqdefault.jpg" to fetch the image
+
+        - `score`: float, the average score of the recipe
 
     """
 
@@ -283,7 +292,16 @@ async def search_by_keyword(keyword: str, offset: int, db: AsyncDBSession) -> li
     - `offset`: int, the offset of the result list, each page contains 100 recipes
 
     ## Response Body
-    - list of RecipeInfoResponse, see below.
+    - list of RecipeInfoResponse with the following fields:
+
+        - `rid`: int, the id of the recipe, you will use this to fetch the content of the recipe in the future
+
+        - `title`: string, the title of the recipe
+
+        - `link`: string, the video link of the recipe, format: "https://youtube.com/watch?v={videoid}", if you want
+        to fetch video thumbnail, you can use "https://img.youtube.com/vi/{videoid}/hqdefault.jpg" to fetch the image
+
+        - `score`: float, the average score of the recipe
 
     """
     result = await db.execute(search_by_keyword_stmt, {"keyword": keyword, "offset": offset * 100})
