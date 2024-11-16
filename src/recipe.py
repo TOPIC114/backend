@@ -242,7 +242,7 @@ search_by_keyword_stmt = text(
 
 
 @recipe_root.get("/search/iid")
-async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query(None)) -> list[RecipeInfoResponse]:
+async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query(None)) -> list[RecipeSearchResponse]:
     """
     # Search recipes by ingredient ids
 
@@ -270,7 +270,7 @@ async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query
 
     # Convert results to a list of dictionaries
     response = [
-        RecipeInfoResponse(
+        RecipeSearchResponse(
             rid=row.rid,
             title=row.title,
             link=row.link,
@@ -283,7 +283,7 @@ async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query
 
 
 @recipe_root.get("/search/keyword")
-async def search_by_keyword(keyword: str, offset: int, db: AsyncDBSession) -> list[RecipeInfoResponse]:
+async def search_by_keyword(keyword: str, offset: int, db: AsyncDBSession) -> list[RecipeSearchResponse]:
     """
     # Search recipes by keyword
 
@@ -309,7 +309,7 @@ async def search_by_keyword(keyword: str, offset: int, db: AsyncDBSession) -> li
     result = await db.execute(search_by_keyword_stmt, {"keyword": keyword, "offset": offset * 100})
 
     response = [
-        RecipeInfoResponse(
+        RecipeSearchResponse(
             rid=row.rid,
             title=row.title,
             link=row.link,
