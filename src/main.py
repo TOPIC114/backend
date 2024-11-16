@@ -1,6 +1,7 @@
 import os
 
 from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 from starlette.staticfiles import StaticFiles
 
 from detect import detection_router
@@ -57,6 +58,19 @@ app.include_router(detection_router)
 app.include_router(i_router)
 app.include_router(m_router)
 app.include_router(video_root)
+
+origins = [
+    "http://localhost",
+    "http://localhost:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 os.makedirs('img', exist_ok=True)
 app.mount("/img", StaticFiles(directory="img"), name="img")
