@@ -12,7 +12,6 @@ from response.recipe import RecipeSearchResponse
 from response.user import UserInfoResponse
 from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
-from sql_app.model.Recipe import Recipe
 from sql_app.model.User import User, Session, search
 
 logger = logging.getLogger(__name__)
