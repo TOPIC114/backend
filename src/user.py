@@ -4,7 +4,7 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Security, Depends, Header
 from fastapi.security import APIKeyHeader
-from sqlalchemy import select, or_, delete, text
+from sqlalchemy import select, or_, delete, text, update
 from sqlalchemy.exc import IntegrityError
 
 from request.user import RegisterRequest, LoginRequest
@@ -244,3 +244,42 @@ async def get_user_recommend():
     # Get user recommend (**Token required**) (Not implemented yet)
     """
     raise HTTPException(status_code=501, detail='Not implemented yet')
+
+
+@user_root.post('/stuff', status_code=200)
+async def make_stuff(id:int,db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
+
+    """
+    # Make a user to be stuff (Admin Only)
+
+    ### Request Body
+    - `id`: int, the id of the user that you want to make stuff
+
+    ### Response Body
+    - `message`: string, the message of the response, telling the user the make stuff is success. You can ignore this message
+
+    """
+
+    if user.level < 128:
+        raise HTTPException(status_code=401)
+
+    stmt = select(User).where(User.id == id).limit(1)
+    stuff = (await db.execute(stmt)).scalars().first()
+
+    if not stuff:
+        raise HTTPException(status_code=404, detail='User not found')
+
+    elif stuff.level >= 128:
+        raise HTTPException(status_code=409, detail='User is already admin')
+
+    elif stuff.level >= 64:
+        raise HTTPException(status_code=409, detail='User is already stuff')
+
+    try:
+        stuff.level = 64
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise e
+
+    return SuccessResponse(message='Make admin success')
