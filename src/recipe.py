@@ -60,11 +60,11 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
 
 
     """
+
     if user.level < 64:
         raise HTTPException(status_code=403)
     new_recipe = Recipe(name=info.name, description=info.description,
                         video_link=info.video_link, rtype=info.rtype)
-    uid = user.id
     try:
         db.add(new_recipe)
         await db.flush()
@@ -73,21 +73,24 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
 
         tasks = []
 
-        tasks.append(db.execute(author.insert().values(uid=uid, rid=new_recipe.id)))
+        tasks.append(db.execute(author.insert().values(uid=user.id, rid=new_recipe.id)))
         for i in info.iids:
+            logger.debug("Adding ingredient %s with recipe id %s", i, new_recipe.id)
             tasks.append(db.execute(made.insert().values(rid=new_recipe.id, iid=i, weight=1)))
 
         await asyncio.gather(*tasks)
         await db.flush()
         # update the weight of the recipe ingredients based on the recipe type
+        logger.debug("Updating weight for recipe weight by with type id %s", info.rtype)
         await db.execute(update_weight_stmt, {"rtype": info.rtype})
         # commit the transaction to save the changes
         await db.commit()
 
     except Exception as e:
-        logger.error("Failed to create recipe, rolling back")
+        logger.error("Failed to create recipe, rolling back!")
+        logger.exception(e)
         await db.rollback()
-        raise e
+        raise HTTPException(status_code=500, detail="Failed to create recipe")
 
     return SuccessResponse(message='upload success')
 
@@ -98,7 +101,6 @@ async def create_recipe_type(info: RecipeTypeRequest, db: AsyncDBSession,
     """
     # Create a new recipe type (Admin Only, don't implement in frontend)
     we may convert this to a stuff endpoint in the future
-
     """
 
     if user.level < 128:
