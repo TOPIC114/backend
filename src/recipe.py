@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 
@@ -22,31 +23,38 @@ recipe_webhook = os.getenv("recipe_webhook")
 logger = logging.getLogger(__name__)
 
 @recipe_root.post("/create")
-async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)):
+async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
     """
     # Create a new recipe (Admin)
     we will convert this to a stuff endpoint in the future
     """
-    if user.level < 128:
-        raise HTTPException(status_code=404)
+    if user.level <= 64:
+        raise HTTPException(status_code=403)
     new_recipe = Recipe(name=info.name, description=info.description,
                         video_link=info.video_link, rtype=info.rtype)
     uid = user.id
     try:
         db.add(new_recipe)
+        await db.flush()
+        await db.refresh(new_recipe) # to fetch the id
+        logger.debug("Added new recipe with id %s", new_recipe.id)
+
+        tasks = []
+
+        tasks.append(db.execute(author.insert().values(uid=uid, rid=new_recipe.id)))
+        for i in info.iids:
+            tasks.append(db.execute(made.insert().values(rid=new_recipe.id, iid=i, weight=1)))
+
+        await asyncio.gather(*tasks)
+        # commit the transaction to save the changes
         await db.commit()
-        await db.refresh(new_recipe)
-        rid = new_recipe.id
-        await db.execute(author.insert().values(uid=uid, rid=rid))
-        await db.commit()
+
     except Exception as e:
+        logger.error("Failed to create recipe, rolling back")
         await db.rollback()
         raise e
 
-    webhook = DiscordWebhook(url=recipe_webhook, content=f"# {rid}.{info.name}\n{info.description}")
-    _ = webhook.execute()
-
-    return {"rid": rid}
+    return SuccessResponse(message='upload success')
 
 
 @recipe_root.post("/type/create")
