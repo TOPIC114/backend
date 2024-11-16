@@ -4,10 +4,11 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Security, Depends, Header
 from fastapi.security import APIKeyHeader
-from sqlalchemy import select, or_, delete
+from sqlalchemy import select, or_, delete, text
 from sqlalchemy.exc import IntegrityError
 
 from request.user import RegisterRequest, LoginRequest
+from response.recipe import RecipeSearchResponse
 from response.user import UserInfoResponse
 from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
@@ -134,32 +135,65 @@ async def get_user_info(user: User = Depends(token_verify)) -> UserInfoResponse:
     """
     return UserInfoResponse(username=user.username, email=user.email, level=user.level)
 
+history_stmt = text(
+    """
+    select
+        r.name as title,
+        r.id as rid,
+        rate.rating as score,
+        r.video_link as link
+    FROM recipe r
+    RIGHT JOIN (
+        SELECT rid 
+        FROM search
+        WHERE uid = :uid
+    ) as history
+    ON r.id = history.rid
+    LEFT OUTER JOIN (
+        SELECT AVG(rate) as rating, recipe_id as rid
+        FROM comment
+        GROUP BY recipe_id
+    ) as rate
+    ON r.id = rate.rid
+    Limit 100
+    """
+)
 
-@user_root.get('/searches', status_code=200, responses={
+@user_root.get('/history', status_code=200, responses={
     401: {"description": "Unauthorized - Invalid token"}
 })
-async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token_verify)):
+async def get_user_search_history(db: AsyncDBSession, user: User = Depends(token_verify)) -> list[RecipeSearchResponse]:
     """
-    # Get user search history (**Token required**)
+    # Get user click history (**Token required**)
     return the list of recipes that the user has visited before (up to 100 record)
 
-    Currently, the endpoint will not return anything, since the search history is not implemented in the /recipe/content/{id}
-    endpoint yet.
+    ## Response Body
+    - list of RecipeSearchResponse with the following fields:
+
+        - `rid`: int, the id of the recipe, you will use this to fetch the content of the recipe in the future
+
+        - `title`: string, the title of the recipe
+
+        - `link`: string, the video link of the recipe, format: "https://youtube.com/watch?v={videoid}", if you want
+        to fetch video thumbnail, you can use "https://img.youtube.com/vi/{videoid}/hqdefault.jpg" to fetch the image
+
+        - `score`: float, the average score of the recipe
+
 
     """
-    stmt = select(Recipe).join_from(search, Recipe).where(search.c.uid == user.id)
-    result = await db.execute(stmt)
-    recipe_list = [
-        {
-            'id': recipe.id,
-            'name': recipe.name,
-            'description': recipe.description,
-            'image': recipe.image
-        }
-        for recipe in result
-    ]
-    return recipe_list
+    result = await db.execute(history_stmt, {'uid': user.id, 'offset': user.id})
 
+    recipe_list = [
+        RecipeSearchResponse(
+            title=row.title,
+            rid=row.rid,
+            score=row.score,
+            link=row.link
+        )
+        for row in result
+    ]
+
+    return recipe_list
 
 @user_root.get('/logout', status_code=200, responses={
     401: {"description": "Unauthorized - Invalid token"}
