@@ -253,7 +253,7 @@ async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query
     - `offset`: int, the offset of the result list, each page contains 100 recipes
 
     ## Response Body
-    - list of RecipeInfoResponse with the following fields:
+    - list of RecipeSearchResponse with the following fields:
 
         - `rid`: int, the id of the recipe, you will use this to fetch the content of the recipe in the future
 
@@ -294,7 +294,7 @@ async def search_by_keyword(keyword: str, offset: int, db: AsyncDBSession) -> li
     - `offset`: int, the offset of the result list, each page contains 100 recipes
 
     ## Response Body
-    - list of RecipeInfoResponse with the following fields:
+    - list of RecipeSearchResponse with the following fields:
 
         - `rid`: int, the id of the recipe, you will use this to fetch the content of the recipe in the future
 
