@@ -28,7 +28,7 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
     # Create a new recipe (Admin)
     we will convert this to a stuff endpoint in the future
     """
-    if user.level <= 64:
+    if user.level < 64:
         raise HTTPException(status_code=403)
     new_recipe = Recipe(name=info.name, description=info.description,
                         video_link=info.video_link, rtype=info.rtype)
