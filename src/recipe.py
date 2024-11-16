@@ -1,3 +1,4 @@
+import logging
 import os
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -11,13 +12,14 @@ from sql_app.model.Recipe import *
 from sql_app.model.User import *
 from response.recipe import *
 from response.utils import SuccessResponse
-from user import token_verify
+from user import token_verify, optional_token_verify
 from discord_webhook import DiscordWebhook
 
 recipe_root = APIRouter(prefix="/recipes", tags=['recipe'])
 type_webhook = os.getenv("type_webhook")
 recipe_webhook = os.getenv("recipe_webhook")
 
+logger = logging.getLogger(__name__)
 
 @recipe_root.post("/create")
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)):
@@ -358,9 +360,13 @@ iids_stmt = text(
     """
 )
 
+searches = text("""
+INSERT INTO backend.search (rid,uid,search_date) VALUES (:rid,:uid,:search_date)
+ON DUPLICATE KEY UPDATE search_date=VALUES(search_date)
+""")
 
 @recipe_root.get("/content/{rid}", status_code=200)
-async def read_recipe(rid: int, db: AsyncDBSession) -> RecipeInfoResponse:
+async def read_recipe(rid: int, db: AsyncDBSession, user = Depends(optional_token_verify)) -> RecipeInfoResponse:
     """
     # Read the content of a recipe by its id
 
@@ -375,9 +381,17 @@ async def read_recipe(rid: int, db: AsyncDBSession) -> RecipeInfoResponse:
     - `iids`: List[int], the list of ingredient ids of the recipe
 
     """
+
+    if user:
+        logger.debug("Write search history for user %s", user.id)
+        await db.execute(searches, {"rid": rid, "uid": user.id, "search_date": datetime.now()})
+        await db.commit()
+
     connect = await db.execute(recipe_search, {"rid": rid})
     recipe = connect.fetchone()
-    print(recipe.title)
+
+    if recipe == None:
+        raise HTTPException(status_code=404)
 
     ouo = await db.execute(comment_search_stmt, {"rid": rid})
     result = ouo.fetchall()

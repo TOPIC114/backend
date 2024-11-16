@@ -1,6 +1,8 @@
+import logging
 import uuid
+from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Security, Depends
+from fastapi import APIRouter, HTTPException, Security, Depends, Header
 from fastapi.security import APIKeyHeader
 from sqlalchemy import select, or_, delete
 from sqlalchemy.exc import IntegrityError
@@ -11,6 +13,8 @@ from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
 from sql_app.model.Recipe import Recipe
 from sql_app.model.User import User, Session, search
+
+logger = logging.getLogger(__name__)
 
 user_root = APIRouter(
     prefix='/user',
@@ -99,6 +103,21 @@ async def token_verify(db: AsyncDBSession, token: str = Security(api_key_header)
     stmt = select(User).join_from(User, Session).where(Session.session == token).limit(1)
     result = await db.execute(stmt)
     user = result.scalars().first()
+    if not user:
+        raise HTTPException(status_code=401, detail='Invalid token')
+    return user
+
+# make the token in header optional
+async def optional_token_verify(db: AsyncDBSession, X_API_Key: Optional[str] = Header(None)):
+    logger.debug(f'receive X_API_Key: {X_API_Key} in optional_token_verify')
+    if not X_API_Key:
+        return None
+    stmt = select(User).join_from(User, Session).where(Session.session == X_API_Key).limit(1)
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
+    logger.debug("user id: %s", user.id)
+
     if not user:
         raise HTTPException(status_code=401, detail='Invalid token')
     return user
