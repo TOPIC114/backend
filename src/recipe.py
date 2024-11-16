@@ -22,6 +22,22 @@ recipe_webhook = os.getenv("recipe_webhook")
 
 logger = logging.getLogger(__name__)
 
+update_weight_stmt = text(
+"""
+UPDATE made
+INNER JOIN backend.recipe r on made.rid = r.id
+INNER JOIN (
+    SELECT iid,COUNT(iid) as count,r2.rtype
+    FROM made
+    INNER JOIN backend.recipe r2 on made.rid = r2.id
+    WHERE r2.rtype=:rtype
+    GROUP BY iid
+) as calc
+on r.rtype=calc.rtype and made.iid=calc.iid
+SET made.weight=calc.count
+WHERE r.rtype=:rtype;
+""")
+
 @recipe_root.post("/create")
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
     """
@@ -62,6 +78,9 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
             tasks.append(db.execute(made.insert().values(rid=new_recipe.id, iid=i, weight=1)))
 
         await asyncio.gather(*tasks)
+        await db.flush()
+        # update the weight of the recipe ingredients based on the recipe type
+        await db.execute(update_weight_stmt, {"rtype": info.rtype})
         # commit the transaction to save the changes
         await db.commit()
 
