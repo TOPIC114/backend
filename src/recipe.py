@@ -25,8 +25,24 @@ logger = logging.getLogger(__name__)
 @recipe_root.post("/create")
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
     """
-    # Create a new recipe (Admin)
-    we will convert this to a stuff endpoint in the future
+    # Create a new recipe (Stuff)
+
+    ## Request Body
+    - `name`: string, the name of the recipe
+
+    - `description`: string, the description of the recipe
+
+    - `video_link`: string, the video link of the recipe, format: "https://youtube.com/watch?v={videoid}"
+
+    - `rtype`: int, the type of the recipe
+
+    - `iids`: List[int], the list of ingredient ids of the recipe
+
+    ## Response Body
+
+    - `message`: string, the message of the response, telling the user the recipe is created. You can ignore this message.
+
+
     """
     if user.level < 64:
         raise HTTPException(status_code=403)
