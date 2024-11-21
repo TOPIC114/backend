@@ -1,13 +1,14 @@
 from sqlalchemy.orm import relationship
 
 from ..db import Base
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, FLOAT, Text
+from sqlalchemy import Column, Integer, String, Table, ForeignKey, FLOAT, Text, Boolean
 
 made = Table(
     'made', Base.metadata,
     Column('rid', Integer, ForeignKey('recipe.id', ondelete='CASCADE'), primary_key=True),
     Column('iid', Integer, ForeignKey('ingredient.id', ondelete='CASCADE'), primary_key=True),
-    Column('weight', FLOAT, nullable=False, default=1.0)
+    Column('weight', FLOAT, nullable=False, default=1.0),
+    Column('main', Boolean, nullable=False, default=False),
 )
 
 
