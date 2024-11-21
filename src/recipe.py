@@ -4,6 +4,7 @@ import os
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.params import Query
+from sqlalchemy.orm.sync import update
 
 from sql_app.db import AsyncDBSession
 from sqlalchemy import select, delete, func, text
@@ -37,6 +38,16 @@ on r.rtype=calc.rtype and made.iid=calc.iid
 SET made.weight=calc.count
 WHERE r.rtype=:rtype;
 """)
+
+@recipe_root.post('/made/update')
+async def update_recipe(rid:int,iid:int,main:bool,db:AsyncDBSession):
+    """
+    Change rid <--> iid main mapping
+    """
+    # TODO
+    raise HTTPException(status_code=501)
+    
+    
 
 @recipe_root.post("/create")
 async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Depends(token_verify)) -> SuccessResponse:
@@ -74,9 +85,13 @@ async def create_recipe(info: RecipeUpload, db: AsyncDBSession, user: User = Dep
         tasks = []
 
         tasks.append(db.execute(author.insert().values(uid=user.id, rid=new_recipe.id)))
-        for i in info.iids:
-            logger.debug("Adding ingredient %s with recipe id %s", i, new_recipe.id)
-            tasks.append(db.execute(made.insert().values(rid=new_recipe.id, iid=i, weight=1)))
+        for i in info.main_iids:
+            logger.debug("Adding main ingredient %s with recipe id %s", i, new_recipe.id)
+            tasks.append(db.execute(made.insert().values(rid=new_recipe.id, iid=i, weight=1, main=True)))
+
+        for i in info.sub_iids:
+            logger.debug("Adding sub ingredient %s with recipe id %s", i, new_recipe.id)
+            tasks.append(db.execute(made.insert().values(rid=new_recipe.id, iid=i, weight=1, main=False)))
 
         await asyncio.gather(*tasks)
         await db.flush()
@@ -106,8 +121,6 @@ async def create_recipe_type(info: RecipeTypeRequest, db: AsyncDBSession,
     if user.level < 128:
         raise HTTPException(status_code=401)
 
-    webhook = DiscordWebhook(url=type_webhook, content=info.name)
-    _ = webhook.execute()
 
     new_type = RecipeType(name=info.name)
     try:

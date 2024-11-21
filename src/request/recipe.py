@@ -6,7 +6,8 @@ class RecipeUpload(BaseModel):
     description: str
     video_link: str = None
     rtype: int = None
-    iids: list[int]
+    main_iids: list[int]
+    sub_iids: list[int]
 
 
 class RecipeSearch(BaseModel):
