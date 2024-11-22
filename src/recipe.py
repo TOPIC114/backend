@@ -4,7 +4,6 @@ import os
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.params import Query
-from sqlalchemy.orm.sync import update
 
 from sql_app.db import AsyncDBSession
 from sqlalchemy import select, delete, func, text
@@ -15,7 +14,6 @@ from sql_app.model.User import *
 from response.recipe import *
 from response.utils import SuccessResponse
 from user import token_verify, optional_token_verify
-from discord_webhook import DiscordWebhook
 
 recipe_root = APIRouter(prefix="/recipes", tags=['recipe'])
 type_webhook = os.getenv("type_webhook")
@@ -39,14 +37,6 @@ SET made.weight=calc.count
 WHERE r.rtype=:rtype;
 """)
 
-@recipe_root.post('/made/update')
-async def update_recipe(rid:int,iid:int,main:bool,db:AsyncDBSession):
-    """
-    Change rid <--> iid main mapping
-    """
-    # TODO
-    raise HTTPException(status_code=501)
-    
     
 
 @recipe_root.post("/create")

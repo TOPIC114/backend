@@ -6,6 +6,7 @@ from starlette.staticfiles import StaticFiles
 
 from detect import detection_router
 from ingredient import i_router
+from made import made_root
 from user import user_root
 from recipe import recipe_root
 from video import video_root
@@ -56,6 +57,7 @@ app.include_router(recipe_root)
 app.include_router(detection_router)
 app.include_router(i_router)
 app.include_router(video_root)
+app.include_router(made_root)
 
 origins = [
     "http://localhost",
