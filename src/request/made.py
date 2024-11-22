@@ -3,12 +3,11 @@ from typing import List
 from pydantic import BaseModel
 
 
-class MadeUpload(BaseModel):
+class MadeUpdate(BaseModel):
     rid: int
     iid: int
+    main: bool
 
-
-class MadeUploadList(BaseModel):
+class MadeDelete(BaseModel):
     rid: int
-    iids: List[int]
-
+    iid: int

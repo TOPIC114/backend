@@ -4,6 +4,7 @@ from http.client import HTTPException
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 
+from request.made import MadeUpdate, MadeDelete
 from response.utils import SuccessResponse
 from sql_app.db import AsyncDBSession
 from user import token_verify
@@ -19,7 +20,7 @@ update_stmt = text(
 )
 
 @made_root.post('/update')
-async def update_recipe(rid:int,iid:int,main:bool,db:AsyncDBSession,user=Depends(token_verify)) -> SuccessResponse:
+async def update_recipe(r:MadeUpdate,db:AsyncDBSession,user=Depends(token_verify)) -> SuccessResponse:
     """
     # Insert or update the ingredient main/sub in the recipe (Admin only)
 
@@ -42,7 +43,7 @@ async def update_recipe(rid:int,iid:int,main:bool,db:AsyncDBSession,user=Depends
         raise HTTPException(status_code=403,detail='permission denied')
 
     try:
-        await db.execute(update_stmt,{'rid':rid,'iid':iid,'main':main})
+        await db.execute(update_stmt,{'rid':r.rid,'iid':r.iid,'main':r.main})
         await db.commit()
         return SuccessResponse(message='success')
     except Exception as e:
@@ -58,7 +59,7 @@ delete_stmt = text(
 )
 
 @made_root.delete('/delete')
-async def delete_recipe(rid:int,iid:int,db:AsyncDBSession,user=Depends(token_verify)) -> SuccessResponse:
+async def delete_recipe(r:MadeDelete,db:AsyncDBSession,user=Depends(token_verify)) -> SuccessResponse:
     logger.debug("delete_recipe")
     """
     # Delete the ingredient in the recipe (Admin only)
@@ -76,6 +77,9 @@ async def delete_recipe(rid:int,iid:int,db:AsyncDBSession,user=Depends(token_ver
 
     if user.level < 129:
         raise HTTPException(status_code=403,detail='permission denied')
+
+    rid = r.rid
+    iid = r.iid
 
     try:
         await db.execute(delete_stmt,{'rid':rid,'iid':iid})
