@@ -199,35 +199,38 @@ async def delete_recipe_type(tid: int, db: AsyncDBSession, user: User = Depends(
 
 search_by_iids_stmt = text(
     """
-    select
-        made.rid as rid,
-        r.name as title,
-        video_link as link,
-        score.s as score
-    FROM backend.made
-    INNER JOIN backend.recipe r
-        on made.rid = r.id
-    INNER JOIN backend.author a
-        on backend.made.rid = a.rid
-    INNER JOIN backend.user u
-        on a.uid = u.id
-    INNER JOIN backend.recipe_type rt
-        on r.rtype = rt.id
+    select r.id as rid,
+           r.name as title,
+           r.video_link as link,
+           rate.avg as score
+    FROM backend.recipe r
+    INNER JOIN (
+        select rid,
+               SUM(m.main = TRUE) as main,
+               SUM(m.iid in :sets) / (:size + COUNT(m.iid) - SUM(m.iid in :sets)) as sim
+        FROM backend.made m
+        GROUP BY m.rid
+        HAVING
+            main = SUM(m.main and (m.iid in :sets)) AND
+            sim > 0
+        ORDER BY
+            sim desc,
+            SUM(m.main = TRUE)
+    ) as made_sim
+    on made_sim.rid=r.id
     LEFT OUTER JOIN (
-        SELECT AVG(comment.rate) as s,comment.recipe_id
-        FROM comment
-        GROUP BY comment.recipe_id
-    ) as score
-    ON score.recipe_id = r.id
-    WHERE
-        iid IN :iids
-    GROUP BY rid
-    HAVING
-        SUM(made.weight) <> 0
+        SELECT recipe_id as rid,
+               AVG(rate) as avg
+        FROM backend.comment c
+        GROUP BY recipe_id
+    ) as rate
+    on r.id=rate.rid
     ORDER BY
-        SUM(made.weight) desc,
-        COUNT(made.weight) desc,
-        rid
+        made_sim.sim desc,
+        made_sim.main desc,
+        IF(score is null, 1, 0), # put null in the end.
+        score desc,
+        r.id
     LIMIT 100
     OFFSET :offset
     """
@@ -314,7 +317,8 @@ async def search_by_iid(offset: int, db: AsyncDBSession, iids: List[int] = Query
 
     """
 
-    result = await db.execute(search_by_iids_stmt, {"iids": iids, "offset": offset * 100})
+    sets = set(iids) # remove duplicate
+    result = await db.execute(search_by_iids_stmt, {"sets": sets, "offset": offset * 100,"size":len(sets)})
 
     # Convert results to a list of dictionaries
     response = [
