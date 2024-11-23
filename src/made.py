@@ -88,3 +88,37 @@ async def delete_recipe(r:MadeDelete,db:AsyncDBSession,user=Depends(token_verify
         await db.rollback()
         logger.exception(e)
         raise HTTPException(status_code=400)
+
+
+@made_root.get('/main/{rid}')
+async def get_main_ingredient(rid:int,db:AsyncDBSession,user=Depends(token_verify)) -> list:
+    """
+    # Get main ingredient of the recipe
+
+    ## Request Body
+    - rid: recipe id
+
+    ## Response code
+    - 200: success
+    - 400: failed
+
+    ## Response Body
+    - list of main ingredient
+    """
+
+    stmt = text(
+        """
+        SELECT iid
+        FROM made m
+        WHERE m.rid = :rid AND m.main = 1
+        """
+    )
+    try:
+        result = await db.execute(stmt,{'rid':rid})
+        response = [
+            row[0] for row in result
+        ]
+        return response
+    except Exception as e:
+        logger.exception(e)
+        raise HTTPException(status_code=400)
