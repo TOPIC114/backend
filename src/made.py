@@ -1,7 +1,6 @@
 import logging
-from http.client import HTTPException
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 
 from request.made import MadeUpdate, MadeDelete
