@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, update, insert
+from sqlalchemy import select, update
 
-from request.ingredient import ChangeNameRequest, AddSubIngredient, IngredientCreate
+from request.ingredient import ChangeNameRequest, IngredientCreate
 from sql_app.db import AsyncDBSession
 from sql_app.model.Recipe import Ingredient
 from sql_app.model.User import User
@@ -61,7 +61,7 @@ async def create_recipe(info: IngredientCreate, db: AsyncDBSession, user: User =
     """
 
     if user.level < 128:
-        raise HTTPException(status_code=404)
+        raise HTTPException(status_code=403, detail='permission denied')
     stmt = Ingredient(name=info.name, mandarin=info.mandarin)
     try:
         db.add(stmt)
