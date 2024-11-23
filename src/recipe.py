@@ -430,16 +430,16 @@ async def read_recipe(rid: int, db: AsyncDBSession, user = Depends(optional_toke
 
     """
 
-    if user:
-        logger.debug("Write search history for user %s", user.id)
-        await db.execute(searches, {"rid": rid, "uid": user.id, "search_date": datetime.now()})
-        await db.commit()
-
     connect = await db.execute(recipe_search, {"rid": rid})
     recipe = connect.fetchone()
 
     if recipe == None:
         raise HTTPException(status_code=404)
+
+    if user: # if user is not None, add this to history
+        logger.debug("Write search history for user %s", user.id)
+        await db.execute(searches, {"rid": rid, "uid": user.id, "search_date": datetime.now()})
+        await db.commit()
 
     ouo = await db.execute(comment_search_stmt, {"rid": rid})
     result = ouo.fetchall()
